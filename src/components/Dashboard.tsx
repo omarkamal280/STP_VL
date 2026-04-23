@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Clock, Users, FileText, Eye } from 'lucide-react';
+import { AlertTriangle, Clock, Users, FileText, Eye, Tag, TrendingUp } from 'lucide-react';
 import { mockViolations, mockDisputes } from '../mockData';
 import { Violation } from '../types';
 import ViolationDetailModal from './ViolationDetailModal';
@@ -97,6 +97,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           color="text-green-600"
           subtitle="Awaiting response"
         />
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <Tag className="w-8 h-8 text-blue-600" />
+            <div>
+              <p className="text-sm text-gray-600">Total Types</p>
+              <p className="text-xl font-bold text-gray-900">9</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="w-8 h-8 text-orange-600" />
+            <div>
+              <p className="text-sm text-gray-600">Most Common</p>
+              <p className="text-lg font-bold text-gray-900">Quality Issues</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <TrendingUp className="w-8 h-8 text-green-600" />
+            <div>
+              <p className="text-sm text-gray-600">Fastest Growing</p>
+              <p className="text-lg font-bold text-gray-900">Quality Issues</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <Users className="w-8 h-8 text-purple-600" />
+            <div>
+              <p className="text-sm text-gray-600">Total Cases</p>
+              <p className="text-xl font-bold text-gray-900">1,459</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -228,34 +268,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
-            onClick={() => onNavigate?.('violation-ledger', { showAddForm: true })}
-            className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <FileText className="w-5 h-5" />
-            <span>Add New Violation</span>
-          </button>
-          <button 
-            onClick={() => onNavigate?.('violation-ledger', { activeDisputesOnly: true })}
-            className="flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            <Users className="w-5 h-5" />
-            <span>Review Disputes</span>
-          </button>
-          <button 
-            onClick={() => window.open('https://zoho.com', '_blank')}
-            className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            <Clock className="w-5 h-5" />
-            <span>View All Tickets</span>
-          </button>
-        </div>
-      </div>
-
+      
       {/* Violation Detail Modal */}
       <ViolationDetailModal
         violation={selectedViolation}

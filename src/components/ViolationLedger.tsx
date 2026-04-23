@@ -327,7 +327,26 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
       {/* Add Violation Form */}
       {showAddForm && (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Violation</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Add New Violation</h3>
+            <button
+              onClick={() => {
+                setShowAddForm(false);
+                setSelectedTemplate(null);
+                setNewViolation({
+                  sellerId: '',
+                  projectId: '',
+                  type: '',
+                  severity: 'medium',
+                  description: '',
+                  messageToSeller: ''
+                });
+              }}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
           <form onSubmit={handleAddViolation} className="space-y-4">
             {/* Template Selection */}
             <div className="bg-blue-50 rounded-lg p-4">
@@ -503,8 +522,11 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      {/* Filters and Table - Hidden when add form is open */}
+      {!showAddForm && (
+        <>
+          {/* Filters */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -926,6 +948,8 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />
+        </>
+      )}
     </div>
   );
 };

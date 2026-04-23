@@ -109,46 +109,7 @@ const ViolationTypes: React.FC<ViolationTypesProps> = () => {
         <p className="text-gray-600 mt-1">Comprehensive list of violation categories and their statistics</p>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <Tag className="w-8 h-8 text-blue-600" />
-            <div>
-              <p className="text-sm text-gray-600">Total Types</p>
-              <p className="text-xl font-bold text-gray-900">9</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <AlertTriangle className="w-8 h-8 text-orange-600" />
-            <div>
-              <p className="text-sm text-gray-600">Most Common</p>
-              <p className="text-lg font-bold text-gray-900">Quality Issues</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <TrendingUp className="w-8 h-8 text-green-600" />
-            <div>
-              <p className="text-sm text-gray-600">Fastest Growing</p>
-              <p className="text-lg font-bold text-gray-900">Quality Issues</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <Users className="w-8 h-8 text-purple-600" />
-            <div>
-              <p className="text-sm text-gray-600">Total Cases</p>
-              <p className="text-xl font-bold text-gray-900">1,459</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      
       {/* Violation Types Table */}
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="p-6 border-b border-gray-200">

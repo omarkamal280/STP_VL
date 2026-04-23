@@ -28,6 +28,12 @@ const tabItems: TabItem[] = [
     component: Dashboard
   },
   {
+    id: 'violation-ledger',
+    label: 'Violation Ledger',
+    icon: FileText,
+    component: ViolationLedger
+  },
+  {
     id: 'violation-data',
     label: 'Violation Data',
     icon: Database,
@@ -38,12 +44,6 @@ const tabItems: TabItem[] = [
     label: 'Violation Types',
     icon: Tag,
     component: ViolationTypes
-  },
-  {
-    id: 'violation-ledger',
-    label: 'Violation Ledger',
-    icon: FileText,
-    component: ViolationLedger
   },
   {
     id: 'templates',
