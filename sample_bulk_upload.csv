@@ -1,0 +1,11 @@
+sellerId,projectId,type,severity,description,templateId,customMessage
+442777,PRJ-2024-001,Late Delivery,medium,Multiple orders delivered beyond promised delivery date,template-1,
+10555,PRJ-2024-002,Product Mismatch,high,Customers receiving products that do not match listing descriptions,template-2,Additional note: Specific items were counterfeit
+492959,PRJ-2024-003,Counterfeit,critical,Suspected counterfeit goods reported by multiple customers,template-3,
+783421,PRJ-2024-004,Poor Packaging,low,Items arrived damaged due to inadequate packaging materials,template-4,
+912567,PRJ-2024-005,Communication,medium,Seller not responding to customer inquiries within 24 hours,template-5,
+334890,PRJ-2024-006,Late Delivery,high,Consistent delays in order fulfillment affecting customer satisfaction,template-1,
+667123,PRJ-2024-007,Quality Issues,high,Products not meeting quality standards, multiple complaints received,template-2,
+445678,PRJ-2024-008,Fraudulent Activity,critical,Suspicious selling patterns indicating potential fraud,,Custom investigation message for this case
+889012,PRJ-2024-009,Packaging,medium,Poor packaging leading to increased product damage rates,template-4,
+223456,PRJ-2024-010,Delivery,low,Minor delivery delays within acceptable range but tracking needed,template-1,Please monitor delivery performance more closely
