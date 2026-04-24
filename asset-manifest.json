@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/STP_ViolationLedger/static/css/main.b8138807.css",
-    "main.js": "/STP_ViolationLedger/static/js/main.982782ba.js",
-    "index.html": "/STP_ViolationLedger/index.html",
-    "main.b8138807.css.map": "/STP_ViolationLedger/static/css/main.b8138807.css.map",
-    "main.982782ba.js.map": "/STP_ViolationLedger/static/js/main.982782ba.js.map"
+    "main.css": "./static/css/main.70baeb0d.css",
+    "main.js": "./static/js/main.9307126a.js",
+    "index.html": "./index.html",
+    "main.70baeb0d.css.map": "./static/css/main.70baeb0d.css.map",
+    "main.9307126a.js.map": "./static/js/main.9307126a.js.map"
   },
   "entrypoints": [
-    "static/css/main.b8138807.css",
-    "static/js/main.982782ba.js"
+    "static/css/main.70baeb0d.css",
+    "static/js/main.9307126a.js"
   ]
 }
