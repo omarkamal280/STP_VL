@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, AlertTriangle } from 'lucide-react';
+import { Database } from 'lucide-react';
 
 interface ViolationDataProps {
   onNavigate?: (tab: string, state?: any) => void;
@@ -84,6 +84,7 @@ const ViolationData: React.FC<ViolationDataProps> = () => {
   ];
 
   // Static violation types data
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const violationTypes = [
     {
       typeId: 'DELIVERY',

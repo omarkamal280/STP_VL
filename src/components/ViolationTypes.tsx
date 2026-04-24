@@ -1,5 +1,4 @@
 import React from 'react';
-import { Tag, AlertTriangle, TrendingUp, Users } from 'lucide-react';
 
 interface ViolationTypesProps {
   onNavigate?: (tab: string, state?: any) => void;

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Filter, AlertCircle, ExternalLink, FileText, Upload, Eye, Check, X } from 'lucide-react';
+import { Search, Plus, Filter, AlertCircle, ExternalLink, Upload, Eye, Check, X } from 'lucide-react';
 import { mockViolations, mockDisputes, mockMessageTemplates } from '../mockData';
 import { Violation, MessageTemplate } from '../types';
 import ViolationDetailModal from './ViolationDetailModal';
@@ -60,7 +60,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
   });
 
   // Template state
-  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   // Bulk upload state
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -107,10 +107,6 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     templateUsed?: MessageTemplate | null;
   }
 
-  // Clear template selection
-  const handleClearTemplate = () => {
-    setSelectedTemplate(null);
-  };
 
   // Bulk upload template functions
   const processBulkTemplates = (data: BulkViolation[]): BulkViolation[] => {
@@ -235,18 +231,6 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     
     return { total: processed.length, withTemplate, withCustom, withoutMessage };
   };
-
-  const violationTypes = [
-    'Late Delivery',
-    'Product Mismatch',
-    'Counterfeit Goods',
-    'Poor Packaging',
-    'Unresponsive Communication',
-    'Fraudulent Activity',
-    'Policy Violation',
-    'Quality Issues',
-    'Other'
-  ];
 
   const filteredViolations = useMemo(() => {
     let filtered = [...mockViolations];
