@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Filter, AlertCircle, ExternalLink, Upload, Eye, Check, X } from 'lucide-react';
+import { Search, Plus, Filter, AlertCircle, ExternalLink, FileText, Upload, Eye, Check, X } from 'lucide-react';
 import { mockViolations, mockDisputes, mockMessageTemplates } from '../mockData';
 import { Violation, MessageTemplate } from '../types';
 import ViolationDetailModal from './ViolationDetailModal';
@@ -56,11 +56,40 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     warningCount: '',
     approver2: '',
     channel: '',
-    misc: ''
+    misc: '',
+    messageToSeller: ''
   });
 
   // Template state
-  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
+
+  // Replace placeholders in a template string with form values
+  const replaceTemplatePlaceholders = (template: string, data: typeof newViolation): string => {
+    return template
+      .replace(/{sellerId}/g, data.partnerID || '[Partner ID]')
+      .replace(/{projectId}/g, data.idViolation || '[Violation ID]')
+      .replace(/{violationCount}/g, data.warningCount || '1')
+      .replace(/{brandName}/g, data.brandName || '[Brand Name]')
+      .replace(/{skuAsn}/g, data.skuAsn || '[SKU/ASN]');
+  };
+
+  // When a template is selected, auto-fill investigationStatus and messageToSeller
+  const handleTemplateSelect = (template: MessageTemplate) => {
+    setSelectedTemplate(template);
+    setNewViolation(prev => ({
+      ...prev,
+      messageToSeller: replaceTemplatePlaceholders(template.template, prev)
+    }));
+  };
+
+  // Re-run placeholder replacement when relevant fields change
+  const handleFormFieldChange = (field: keyof typeof newViolation, value: string) => {
+    const updated = { ...newViolation, [field]: value };
+    if (selectedTemplate) {
+      updated.messageToSeller = replaceTemplatePlaceholders(selectedTemplate.template, updated);
+    }
+    setNewViolation(updated);
+  };
 
   // Bulk upload state
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -291,7 +320,8 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
       warningCount: '',
       approver2: '',
       channel: '',
-      misc: ''
+      misc: '',
+      messageToSeller: ''
     });
     setSelectedTemplate(null);
     setShowAddForm(false);
@@ -370,7 +400,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                   complaintTicket: '', currentSellerRating: '', brandName: '',
                   actionOnOffers: '', disapprovalReason: '', investigatedAcquitted: false,
                   actionedReason: '', actionCode: '', warningCount: '', approver2: '',
-                  channel: '', misc: ''
+                  channel: '', misc: '', messageToSeller: ''
                 });
               }}
               className="text-gray-500 hover:text-gray-700"
@@ -387,7 +417,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">ID Partner <span className="text-red-500">*</span></label>
                   <input type="text" required value={newViolation.partnerID}
-                    onChange={(e) => setNewViolation({...newViolation, partnerID: e.target.value})}
+                    onChange={(e) => handleFormFieldChange('partnerID', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Partner ID" />
                 </div>
@@ -417,7 +447,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">ID Violation <span className="text-red-500">*</span></label>
                   <input type="text" required value={newViolation.idViolation}
-                    onChange={(e) => setNewViolation({...newViolation, idViolation: e.target.value})}
+                    onChange={(e) => handleFormFieldChange('idViolation', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Violation code name" />
                 </div>
@@ -451,14 +481,14 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Brand Code <span className="text-red-500">*</span></label>
                   <input type="text" required value={newViolation.brandCode}
-                    onChange={(e) => setNewViolation({...newViolation, brandCode: e.target.value})}
+                    onChange={(e) => handleFormFieldChange('brandCode', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Brand code" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Brand Name</label>
                   <input type="text" value={newViolation.brandName}
-                    onChange={(e) => setNewViolation({...newViolation, brandName: e.target.value})}
+                    onChange={(e) => handleFormFieldChange('brandName', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Brand name" />
                 </div>
@@ -484,7 +514,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Warning Count <span className="text-red-500">*</span></label>
                   <input type="number" required min="0" value={newViolation.warningCount}
-                    onChange={(e) => setNewViolation({...newViolation, warningCount: e.target.value})}
+                    onChange={(e) => handleFormFieldChange('warningCount', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0" />
                 </div>
@@ -503,7 +533,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                     placeholder="Investigation type" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Investigation Status <span className="text-xs text-blue-600 font-normal">(Controls Template)</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Investigation Status</label>
                   <select value={newViolation.investigationStatus}
                     onChange={(e) => setNewViolation({...newViolation, investigationStatus: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -536,7 +566,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">SKU / ASN <span className="text-red-500">*</span></label>
                   <input type="text" required value={newViolation.skuAsn}
-                    onChange={(e) => setNewViolation({...newViolation, skuAsn: e.target.value})}
+                    onChange={(e) => handleFormFieldChange('skuAsn', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="SKU or ASN" />
                 </div>
@@ -620,6 +650,48 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
               </div>
             </div>
 
+            {/* Section 7: Message to Seller */}
+            <div>
+              <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <FileText className="w-4 h-4 inline mr-2" />
+                    Message Template
+                  </label>
+                  {selectedTemplate && (
+                    <button type="button" onClick={() => { setSelectedTemplate(null); setNewViolation({...newViolation, messageToSeller: ''}); }}
+                      className="text-sm text-gray-500 hover:text-gray-800">Clear</button>
+                  )}
+                </div>
+                <select
+                  value={selectedTemplate?.id || ''}
+                  onChange={(e) => {
+                    const t = mockMessageTemplates.find(t => t.id === e.target.value);
+                    if (t) handleTemplateSelect(t);
+                    else { setSelectedTemplate(null); setNewViolation({...newViolation, messageToSeller: ''}); }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select a template (optional)</option>
+                  {mockMessageTemplates.filter(t => t.isActive).map(t => (
+                    <option key={t.id} value={t.id}>{t.name} — {t.violationType} ({t.severity})</option>
+                  ))}
+                </select>
+                {selectedTemplate && <p className="text-xs text-gray-500">{selectedTemplate.description}</p>}
+              </div>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Message to Seller
+                  {selectedTemplate && <span className="text-xs text-blue-600 ml-2">(Generated from template — update Partner ID or fields above to refresh)</span>}
+                </label>
+                <textarea
+                  value={newViolation.messageToSeller}
+                  onChange={(e) => setNewViolation({...newViolation, messageToSeller: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                  placeholder="Message to be sent to the seller" />
+              </div>
+            </div>
+
             <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
               <button
                 type="button"
@@ -652,7 +724,8 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                     warningCount: '',
                     approver2: '',
                     channel: '',
-                    misc: ''
+                    misc: '',
+                    messageToSeller: ''
                   });
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
