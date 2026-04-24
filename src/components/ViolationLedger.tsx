@@ -31,12 +31,32 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
 
   // Form state for adding violations
   const [newViolation, setNewViolation] = useState({
-    sellerId: '',
-    projectId: '',
-    type: '',
-    severity: 'medium' as 'low' | 'medium' | 'high' | 'critical',
-    description: '',
-    messageToSeller: ''
+    partnerID: '',
+    countryCode: '',
+    mpCode: 'noon',
+    idViolation: '',
+    violationDate: '',
+    idPenalty: '',
+    family: '',
+    brandCode: '',
+    overallRisk: '',
+    requestSource: '',
+    triggeredByFlag: false,
+    investigationType: '',
+    investigationStatus: '',
+    skuAsn: '',
+    complaintTicket: '',
+    currentSellerRating: '',
+    brandName: '',
+    actionOnOffers: '',
+    disapprovalReason: '',
+    investigatedAcquitted: false,
+    actionedReason: '',
+    actionCode: '',
+    warningCount: '',
+    approver2: '',
+    channel: '',
+    misc: ''
   });
 
   // Template state
@@ -52,54 +72,40 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
 
   // Bulk violation interface
   interface BulkViolation {
-    sellerId: string;
-    projectId: string;
-    type: string;
-    severity: string;
-    description: string;
+    partnerID: string;
+    countryCode: string;
+    mpCode: string;
+    idViolation: string;
+    violationDate: string;
+    idPenalty: string;
+    family: string;
+    brandCode: string;
+    overallRisk: string;
+    requestSource: string;
+    triggeredByFlag: string;
+    investigationType: string;
+    investigationStatus: string;
+    skuAsn: string;
+    complaintTicket: string;
+    currentSellerRating: string;
+    brandName: string;
+    actionOnOffers: string;
+    disapprovalReason: string;
+    investigatedAcquitted: string;
+    actionedReason: string;
+    actionCode: string;
+    warningCount: string;
+    approver2: string;
+    channel: string;
+    misc: string;
+    // legacy fields kept for template message generation
+    sellerId?: string;
+    projectId?: string;
     templateId?: string;
     customMessage?: string;
     generatedMessage?: string;
     templateUsed?: MessageTemplate | null;
   }
-
-  // Function to replace placeholders in template
-  const replaceTemplatePlaceholders = (template: string, violationData: typeof newViolation): string => {
-    let result = template;
-    
-    // Basic replacements
-    result = result.replace(/{sellerId}/g, violationData.sellerId || '[Seller ID]');
-    result = result.replace(/{projectId}/g, violationData.projectId || '[Project ID]');
-    result = result.replace(/{violationCount}/g, '1'); // Default to 1 for new violations
-    
-    // Add more placeholder replacements as needed
-    return result;
-  };
-
-  // Handle template selection
-  const handleTemplateSelect = (template: MessageTemplate) => {
-    setSelectedTemplate(template);
-    
-    // Auto-fill form fields from template
-    setNewViolation(prev => ({
-      ...prev,
-      type: template.violationType,
-      severity: template.severity,
-      messageToSeller: replaceTemplatePlaceholders(template.template, prev)
-    }));
-  };
-
-  // Handle form field changes (update message if template is selected)
-  const handleFormFieldChange = (field: keyof typeof newViolation, value: string) => {
-    const updatedData = { ...newViolation, [field]: value };
-    setNewViolation(updatedData);
-    
-    // If a template is selected, update the message with new form data
-    if (selectedTemplate) {
-      updatedData.messageToSeller = replaceTemplatePlaceholders(selectedTemplate.template, updatedData);
-      setNewViolation(updatedData);
-    }
-  };
 
   // Clear template selection
   const handleClearTemplate = () => {
@@ -123,22 +129,18 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
       // Strategy 3: Auto-assign by type and severity
       else if (bulkTemplateStrategy === 'auto') {
         template = mockMessageTemplates.find(t => 
-          t.violationType === violation.type && 
-          t.severity === violation.severity &&
+          t.violationType === violation.idViolation && 
+          t.severity === violation.overallRisk &&
           t.isActive
         ) || null;
       }
 
       // Generate message
       if (template) {
-        generatedMessage = replaceTemplatePlaceholders(template.template, {
-          sellerId: violation.sellerId,
-          projectId: violation.projectId,
-          type: violation.type,
-          severity: violation.severity as any,
-          description: violation.description,
-          messageToSeller: ''
-        });
+        generatedMessage = template.template
+          .replace(/{sellerId}/g, violation.sellerId || '[Seller ID]')
+          .replace(/{projectId}/g, violation.projectId || '[Project ID]')
+          .replace(/{violationCount}/g, '1');
       } else if (violation.customMessage) {
         generatedMessage = violation.customMessage;
       }
@@ -168,11 +170,34 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
           });
           
           return {
-            sellerId: violation.sellerId || '',
-            projectId: violation.projectId || '',
-            type: violation.type || '',
-            severity: violation.severity || 'medium',
-            description: violation.description || '',
+            partnerID: violation.partnerID || '',
+            countryCode: violation.countryCode || '',
+            mpCode: violation.mpCode || 'noon',
+            idViolation: violation.idViolation || '',
+            violationDate: violation.violationDate || '',
+            idPenalty: violation.idPenalty || '',
+            family: violation.family || '',
+            brandCode: violation.brandCode || '',
+            overallRisk: violation.overallRisk || '',
+            requestSource: violation.requestSource || '',
+            triggeredByFlag: violation.triggeredByFlag || '',
+            investigationType: violation.investigationType || '',
+            investigationStatus: violation.investigationStatus || '',
+            skuAsn: violation.skuAsn || '',
+            complaintTicket: violation.complaintTicket || '',
+            currentSellerRating: violation.currentSellerRating || '',
+            brandName: violation.brandName || '',
+            actionOnOffers: violation.actionOnOffers || '',
+            disapprovalReason: violation.disapprovalReason || '',
+            investigatedAcquitted: violation.investigatedAcquitted || '',
+            actionedReason: violation.actionedReason || '',
+            actionCode: violation.actionCode || '',
+            warningCount: violation.warningCount || '',
+            approver2: violation.approver2 || '',
+            channel: violation.channel || '',
+            misc: violation.misc || '',
+            sellerId: violation.partnerID || '',
+            projectId: violation.idViolation || '',
             templateId: violation.templateId || undefined,
             customMessage: violation.customMessage || undefined
           };
@@ -257,12 +282,32 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     console.log('Adding violation:', newViolation);
     // Reset form and template state
     setNewViolation({
-      sellerId: '',
-      projectId: '',
-      type: '',
-      severity: 'medium',
-      description: '',
-      messageToSeller: ''
+      partnerID: '',
+      countryCode: '',
+      mpCode: 'noon',
+      idViolation: '',
+      violationDate: '',
+      idPenalty: '',
+      family: '',
+      brandCode: '',
+      overallRisk: '',
+      requestSource: '',
+      triggeredByFlag: false,
+      investigationType: '',
+      investigationStatus: '',
+      skuAsn: '',
+      complaintTicket: '',
+      currentSellerRating: '',
+      brandName: '',
+      actionOnOffers: '',
+      disapprovalReason: '',
+      investigatedAcquitted: false,
+      actionedReason: '',
+      actionCode: '',
+      warningCount: '',
+      approver2: '',
+      channel: '',
+      misc: ''
     });
     setSelectedTemplate(null);
     setShowAddForm(false);
@@ -334,12 +379,14 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                 setShowAddForm(false);
                 setSelectedTemplate(null);
                 setNewViolation({
-                  sellerId: '',
-                  projectId: '',
-                  type: '',
-                  severity: 'medium',
-                  description: '',
-                  messageToSeller: ''
+                  partnerID: '', countryCode: '', mpCode: 'noon', idViolation: '',
+                  violationDate: '', idPenalty: '', family: '', brandCode: '',
+                  overallRisk: '', requestSource: '', triggeredByFlag: false,
+                  investigationType: '', investigationStatus: '', skuAsn: '',
+                  complaintTicket: '', currentSellerRating: '', brandName: '',
+                  actionOnOffers: '', disapprovalReason: '', investigatedAcquitted: false,
+                  actionedReason: '', actionCode: '', warningCount: '', approver2: '',
+                  channel: '', misc: ''
                 });
               }}
               className="text-gray-500 hover:text-gray-700"
@@ -347,164 +394,281 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
               <X className="w-6 h-6" />
             </button>
           </div>
-          <form onSubmit={handleAddViolation} className="space-y-4">
-            {/* Template Selection */}
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  Message Template
-                </label>
-                {selectedTemplate && (
-                  <button
-                    type="button"
-                    onClick={handleClearTemplate}
-                    className="text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    Clear Template
-                  </button>
-                )}
-              </div>
-              <select
-                value={selectedTemplate?.id || ''}
-                onChange={(e) => {
-                  const template = mockMessageTemplates.find(t => t.id === e.target.value);
-                  if (template) {
-                    handleTemplateSelect(template);
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select a template (optional)</option>
-                {mockMessageTemplates
-                  .filter(template => template.isActive)
-                  .map(template => (
-                    <option key={template.id} value={template.id}>
-                      {template.name} - {template.violationType} ({template.severity})
-                    </option>
-                  ))}
-              </select>
-              {selectedTemplate && (
-                <div className="mt-2 text-sm text-gray-600">
-                  <p className="font-medium">{selectedTemplate.description}</p>
+          <form onSubmit={handleAddViolation} noValidate className="space-y-6">
+
+            {/* Section 1: Core Identifiers */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Core Identifiers</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Partner <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.partnerID}
+                    onChange={(e) => setNewViolation({...newViolation, partnerID: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Partner ID" />
                 </div>
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Country Code <span className="text-red-500">*</span></label>
+                  <select required value={newViolation.countryCode}
+                    onChange={(e) => setNewViolation({...newViolation, countryCode: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select country</option>
+                    <option value="AE">AE - UAE</option>
+                    <option value="SA">SA - Saudi Arabia</option>
+                    <option value="EG">EG - Egypt</option>
+                    <option value="KW">KW - Kuwait</option>
+                    <option value="QA">QA - Qatar</option>
+                    <option value="BH">BH - Bahrain</option>
+                    <option value="OM">OM - Oman</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">MP Code <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.mpCode}
+                    onChange={(e) => setNewViolation({...newViolation, mpCode: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    placeholder="noon" />
+                  <p className="text-xs text-gray-400 mt-1">Auto-filled</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Violation <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.idViolation}
+                    onChange={(e) => setNewViolation({...newViolation, idViolation: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Violation code name" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Violation Date <span className="text-red-500">*</span></label>
+                  <input type="date" required value={newViolation.violationDate}
+                    onChange={(e) => setNewViolation({...newViolation, violationDate: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Penalty <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.idPenalty}
+                    onChange={(e) => setNewViolation({...newViolation, idPenalty: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Penalty ID" />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Seller ID
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newViolation.sellerId}
-                  onChange={(e) => handleFormFieldChange('sellerId', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter seller ID"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Project ID
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newViolation.projectId}
-                  onChange={(e) => handleFormFieldChange('projectId', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="PRJ-YYYY-XXX"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Violation Type
-                </label>
-                <select
-                  required
-                  value={newViolation.type}
-                  onChange={(e) => handleFormFieldChange('type', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!!selectedTemplate}
-                >
-                  <option value="">Select type</option>
-                  {violationTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-                {selectedTemplate && (
-                  <p className="text-xs text-gray-500 mt-1">Auto-filled from template</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Severity
-                </label>
-                <select
-                  required
-                  value={newViolation.severity}
-                  onChange={(e) => handleFormFieldChange('severity', e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!!selectedTemplate}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
-                {selectedTemplate && (
-                  <p className="text-xs text-gray-500 mt-1">Auto-filled from template</p>
-                )}
-              </div>
-            </div>
+            {/* Section 2: Classification */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                required
-                value={newViolation.description}
-                onChange={(e) => setNewViolation({...newViolation, description: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Describe the violation"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Message to Seller
-                {selectedTemplate && (
-                  <span className="text-xs text-blue-600 ml-2">(Generated from template)</span>
-                )}
-              </label>
-              <textarea
-                value={newViolation.messageToSeller}
-                onChange={(e) => setNewViolation({...newViolation, messageToSeller: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={4}
-                placeholder="Message to be sent to the seller"
-              />
-              {selectedTemplate && (
-                <div className="mt-2 text-xs text-gray-500">
-                  <p> Tip: Update Seller ID and Project ID above to auto-fill placeholders in the message</p>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Classification</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Family <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.family}
+                    onChange={(e) => setNewViolation({...newViolation, family: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Violation family" />
                 </div>
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand Code <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.brandCode}
+                    onChange={(e) => setNewViolation({...newViolation, brandCode: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Brand code" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand Name</label>
+                  <input type="text" value={newViolation.brandName}
+                    onChange={(e) => setNewViolation({...newViolation, brandName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Brand name" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Overall Risk <span className="text-red-500">*</span></label>
+                  <select required value={newViolation.overallRisk}
+                    onChange={(e) => setNewViolation({...newViolation, overallRisk: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select risk</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Request Source <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.requestSource}
+                    onChange={(e) => setNewViolation({...newViolation, requestSource: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Source of request" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Warning Count <span className="text-red-500">*</span></label>
+                  <input type="number" required min="0" value={newViolation.warningCount}
+                    onChange={(e) => setNewViolation({...newViolation, warningCount: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0" />
+                </div>
+              </div>
             </div>
-            <div className="flex justify-end space-x-3">
+
+            {/* Section 3: Investigation */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Investigation</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Investigation Type</label>
+                  <input type="text" value={newViolation.investigationType}
+                    onChange={(e) => setNewViolation({...newViolation, investigationType: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Investigation type" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Investigation Status <span className="text-xs text-blue-600 font-normal">(Controls Template)</span></label>
+                  <select value={newViolation.investigationStatus}
+                    onChange={(e) => setNewViolation({...newViolation, investigationStatus: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select status</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div className="flex items-center space-x-3 pt-6">
+                  <input type="checkbox" id="triggeredByFlag" checked={newViolation.triggeredByFlag}
+                    onChange={(e) => setNewViolation({...newViolation, triggeredByFlag: e.target.checked})}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded" />
+                  <label htmlFor="triggeredByFlag" className="text-sm font-medium text-gray-700">Triggered by Flag</label>
+                </div>
+                <div className="flex items-center space-x-3 pt-6">
+                  <input type="checkbox" id="investigatedAcquitted" checked={newViolation.investigatedAcquitted}
+                    onChange={(e) => setNewViolation({...newViolation, investigatedAcquitted: e.target.checked})}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded" />
+                  <label htmlFor="investigatedAcquitted" className="text-sm font-medium text-gray-700">Investigated and Acquitted</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: SKU / Ticket */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">SKU / Ticket</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU / ASN <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.skuAsn}
+                    onChange={(e) => setNewViolation({...newViolation, skuAsn: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="SKU or ASN" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Complaint Ticket <span className="text-red-500">*</span></label>
+                  <input type="text" required value={newViolation.complaintTicket}
+                    onChange={(e) => setNewViolation({...newViolation, complaintTicket: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ticket ID" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Seller Rating</label>
+                  <input type="text" value={newViolation.currentSellerRating}
+                    onChange={(e) => setNewViolation({...newViolation, currentSellerRating: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. 4.2" />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 5: Actions */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Actions</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Action Taken on Offers / SKUs</label>
+                  <input type="text" value={newViolation.actionOnOffers}
+                    onChange={(e) => setNewViolation({...newViolation, actionOnOffers: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Describe action taken" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Disapproval Reason</label>
+                  <input type="text" value={newViolation.disapprovalReason}
+                    onChange={(e) => setNewViolation({...newViolation, disapprovalReason: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Reason for disapproval" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Actioned Reason</label>
+                  <input type="text" value={newViolation.actionedReason}
+                    onChange={(e) => setNewViolation({...newViolation, actionedReason: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Reason for action" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Action Code</label>
+                  <input type="text" value={newViolation.actionCode}
+                    onChange={(e) => setNewViolation({...newViolation, actionCode: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Action code" />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 6: Additional Info */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Additional Info</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Approver 2</label>
+                  <input type="text" value={newViolation.approver2}
+                    onChange={(e) => setNewViolation({...newViolation, approver2: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Approver name or ID" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel</label>
+                  <input type="text" value={newViolation.channel}
+                    onChange={(e) => setNewViolation({...newViolation, channel: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Channel" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Misc</label>
+                  <input type="text" value={newViolation.misc}
+                    onChange={(e) => setNewViolation({...newViolation, misc: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Miscellaneous notes" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
               <button
                 type="button"
                 onClick={() => {
                   setShowAddForm(false);
                   setSelectedTemplate(null);
                   setNewViolation({
-                    sellerId: '',
-                    projectId: '',
-                    type: '',
-                    severity: 'medium',
-                    description: '',
-                    messageToSeller: ''
+                    partnerID: '',
+                    countryCode: '',
+                    mpCode: 'noon',
+                    idViolation: '',
+                    violationDate: '',
+                    idPenalty: '',
+                    family: '',
+                    brandCode: '',
+                    overallRisk: '',
+                    requestSource: '',
+                    triggeredByFlag: false,
+                    investigationType: '',
+                    investigationStatus: '',
+                    skuAsn: '',
+                    complaintTicket: '',
+                    currentSellerRating: '',
+                    brandName: '',
+                    actionOnOffers: '',
+                    disapprovalReason: '',
+                    investigatedAcquitted: false,
+                    actionedReason: '',
+                    actionCode: '',
+                    warningCount: '',
+                    approver2: '',
+                    channel: '',
+                    misc: ''
                   });
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
