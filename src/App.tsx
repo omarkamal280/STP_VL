@@ -53,7 +53,63 @@ const tabItems: TabItem[] = [
   }
 ];
 
+const CORRECT_PASSWORD = 'iknowomarkamal';
+
+function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
+  const [input, setInput] = useState('');
+  const [wrong, setWrong] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input === CORRECT_PASSWORD) {
+      onUnlock();
+    } else {
+      setWrong(true);
+      setInput('');
+    }
+  };
+
+  if (wrong) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-red-500 text-5xl font-black tracking-widest select-none">STRANGER DANGER</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-sm flex flex-col items-center space-y-6">
+        <div className="flex items-center justify-center w-14 h-14 bg-blue-600 rounded-xl">
+          <AlertTriangle className="w-8 h-8 text-white" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-gray-900">STP Violation Ledger</h1>
+          <p className="text-sm text-gray-500 mt-1">Enter password to continue</p>
+        </div>
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
+          <input
+            type="password"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            autoFocus
+            placeholder="Password"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest"
+          />
+          <button
+            type="submit"
+            className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Enter
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [unlocked, setUnlocked] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [navigationState, setNavigationState] = useState<any>({});
 
@@ -65,6 +121,10 @@ function App() {
       setNavigationState(state);
     }
   };
+
+  if (!unlocked) {
+    return <PasswordGate onUnlock={() => setUnlocked(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
