@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, Filter, AlertCircle, ExternalLink, FileText, Upload, Eye, Check, X } from 'lucide-react';
-import { mockViolations, mockDisputes, mockMessageTemplates } from '../mockData';
+import { mockViolations, mockDisputes, mockMessageTemplates, mockSellers } from '../mockData';
+import { VIOLATION_CODES, COUNTRY_LABELS } from '../violationSchemas';
 import { Violation, MessageTemplate } from '../types';
 import ViolationDetailModal from './ViolationDetailModal';
 
@@ -59,6 +60,60 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     misc: '',
     messageToSeller: ''
   });
+
+  // Wizard state
+  const [wizardStep, setWizardStep] = useState(1);
+  const [verdict, setVerdict] = useState<{ type: 'actioned' | 'acquitted' | ''; reason: string }>({ type: '', reason: '' });
+  const [showVerdictPanel, setShowVerdictPanel] = useState(false);
+  const [privateNotes, setPrivateNotes] = useState('');
+  const [violationStatus, setViolationStatus] = useState('open');
+
+  // Derived wizard state
+  const sellerInfo = mockSellers[newViolation.partnerID] || null;
+  const availableCountries = sellerInfo
+    ? sellerInfo.countries
+    : ['AE', 'SA', 'EG', 'KW', 'QA', 'BH', 'OM'];
+  const selectedViolationMeta = VIOLATION_CODES.find(v => v.code === newViolation.idViolation) || null;
+  const step2SpecificFields = selectedViolationMeta?.step2Fields ?? [];
+
+  const EMPTY_FORM = {
+    partnerID: '', countryCode: '', mpCode: 'noon', idViolation: '',
+    violationDate: '', idPenalty: '', family: '', brandCode: '',
+    overallRisk: '', requestSource: '', triggeredByFlag: false,
+    investigationType: '', investigationStatus: '', skuAsn: '',
+    complaintTicket: '', currentSellerRating: '', brandName: '',
+    actionOnOffers: '', disapprovalReason: '', investigatedAcquitted: false,
+    actionedReason: '', actionCode: '', warningCount: '', approver2: '',
+    channel: '', misc: '', messageToSeller: '',
+  };
+
+  const handleFormClose = () => {
+    setShowAddForm(false);
+    setSelectedTemplate(null);
+    setWizardStep(1);
+    setShowVerdictPanel(false);
+    setVerdict({ type: '', reason: '' });
+    setPrivateNotes('');
+    setViolationStatus('open');
+    setNewViolation(EMPTY_FORM);
+  };
+
+  const isStep1Valid = () =>
+    newViolation.partnerID.trim() !== '' &&
+    newViolation.countryCode !== '' &&
+    newViolation.idViolation !== '' &&
+    newViolation.requestSource.trim() !== '' &&
+    newViolation.violationDate !== '';
+
+  const isStep2Valid = () =>
+    newViolation.overallRisk !== '' &&
+    newViolation.complaintTicket.trim() !== '' &&
+    step2SpecificFields
+      .filter(f => f.required && f.type !== 'checkbox')
+      .every(f => (newViolation[f.field as keyof typeof newViolation] as string) !== '');
+
+  const healthColor = (h: string) => ({ Good: 'text-green-700 bg-green-100', Fair: 'text-yellow-700 bg-yellow-100', Poor: 'text-orange-700 bg-orange-100', Critical: 'text-red-700 bg-red-100' }[h] ?? 'text-gray-700 bg-gray-100');
+  const ic = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm';
 
   // Template state
   const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
@@ -290,41 +345,14 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     return filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [searchTerm, filterStatus, activeDisputesOnly]);
 
-  const handleAddViolation = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Adding violation:', newViolation);
-    // Reset form and template state
-    setNewViolation({
-      partnerID: '',
-      countryCode: '',
-      mpCode: 'noon',
-      idViolation: '',
-      violationDate: '',
-      idPenalty: '',
-      family: '',
-      brandCode: '',
-      overallRisk: '',
-      requestSource: '',
-      triggeredByFlag: false,
-      investigationType: '',
-      investigationStatus: '',
-      skuAsn: '',
-      complaintTicket: '',
-      currentSellerRating: '',
-      brandName: '',
-      actionOnOffers: '',
-      disapprovalReason: '',
-      investigatedAcquitted: false,
-      actionedReason: '',
-      actionCode: '',
-      warningCount: '',
-      approver2: '',
-      channel: '',
-      misc: '',
-      messageToSeller: ''
-    });
-    setSelectedTemplate(null);
-    setShowAddForm(false);
+  const handleAddViolation = () => {
+    console.log('Submitting violation:', { ...newViolation, privateNotes, violationStatus, verdict: showVerdictPanel ? verdict : null });
+    handleFormClose();
+  };
+
+  const handleSubmitVerdict = () => {
+    console.log('Submitting verdict:', verdict, 'for violation:', newViolation.partnerID);
+    handleFormClose();
   };
 
   const handleViolationClick = (violation: Violation) => {
@@ -383,363 +411,429 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
         </label>
       </div>
 
-      {/* Add Violation Form */}
+      {/* New Violation Wizard */}
       {showAddForm && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Add New Violation</h3>
-            <button
-              onClick={() => {
-                setShowAddForm(false);
-                setSelectedTemplate(null);
-                setNewViolation({
-                  partnerID: '', countryCode: '', mpCode: 'noon', idViolation: '',
-                  violationDate: '', idPenalty: '', family: '', brandCode: '',
-                  overallRisk: '', requestSource: '', triggeredByFlag: false,
-                  investigationType: '', investigationStatus: '', skuAsn: '',
-                  complaintTicket: '', currentSellerRating: '', brandName: '',
-                  actionOnOffers: '', disapprovalReason: '', investigatedAcquitted: false,
-                  actionedReason: '', actionCode: '', warningCount: '', approver2: '',
-                  channel: '', misc: '', messageToSeller: ''
-                });
-              }}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-6 h-6" />
-            </button>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
+          {/* Wizard header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-8">
+              {(['Universal Info', 'Violation Details', 'Resolution'] as const).map((label, idx) => (
+                <React.Fragment key={idx}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+                      ${wizardStep > idx + 1 ? 'bg-green-500 text-white' : wizardStep === idx + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                      {wizardStep > idx + 1 ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                    </div>
+                    <span className={`text-sm font-medium ${wizardStep === idx + 1 ? 'text-blue-600' : wizardStep > idx + 1 ? 'text-green-600' : 'text-gray-400'}`}>{label}</span>
+                  </div>
+                  {idx < 2 && <div className={`w-12 h-px ${wizardStep > idx + 1 ? 'bg-green-400' : 'bg-gray-300'}`} />}
+                </React.Fragment>
+              ))}
+            </div>
+            <button onClick={handleFormClose} className="text-gray-400 hover:text-gray-700 p-1 rounded"><X className="w-5 h-5" /></button>
           </div>
-          <form onSubmit={handleAddViolation} noValidate className="space-y-6">
 
-            {/* Section 1: Core Identifiers */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Core Identifiers</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Partner <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.partnerID}
-                    onChange={(e) => handleFormFieldChange('partnerID', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Partner ID" />
+          <div className="p-6">
+
+            {/* ── STEP 1: Universal Info ── */}
+            {wizardStep === 1 && (
+              <div className="max-w-xl mx-auto space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Seller ID <span className="text-red-500">*</span></label>
+                    <input type="text" autoFocus value={newViolation.partnerID}
+                      onChange={(e) => handleFormFieldChange('partnerID', e.target.value)}
+                      className={ic} placeholder="e.g. 442777" />
+                    {sellerInfo && (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-green-700 bg-green-50 px-2.5 py-1.5 rounded-lg">
+                        <Check className="w-3 h-3 flex-shrink-0" /><span className="font-semibold">{sellerInfo.name}</span>
+                      </div>
+                    )}
+                    {newViolation.partnerID && !sellerInfo && (
+                      <p className="mt-1 text-xs text-amber-600">Unknown ID — all countries available.</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Country <span className="text-red-500">*</span></label>
+                    <select value={newViolation.countryCode}
+                      onChange={(e) => setNewViolation({ ...newViolation, countryCode: e.target.value })}
+                      disabled={!newViolation.partnerID}
+                      className={`${ic} disabled:bg-gray-50 disabled:text-gray-400`}>
+                      <option value="">{newViolation.partnerID ? 'Select country' : 'Enter Seller ID first'}</option>
+                      {availableCountries.map(cc => (
+                        <option key={cc} value={cc}>{cc} — {COUNTRY_LABELS[cc]}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country Code <span className="text-red-500">*</span></label>
-                  <select required value={newViolation.countryCode}
-                    onChange={(e) => setNewViolation({...newViolation, countryCode: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select country</option>
-                    <option value="AE">AE - UAE</option>
-                    <option value="SA">SA - Saudi Arabia</option>
-                    <option value="EG">EG - Egypt</option>
-                    <option value="KW">KW - Kuwait</option>
-                    <option value="QA">QA - Qatar</option>
-                    <option value="BH">BH - Bahrain</option>
-                    <option value="OM">OM - Oman</option>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Violation Code Name <span className="text-red-500">*</span></label>
+                  <select value={newViolation.idViolation}
+                    onChange={(e) => {
+                      const meta = VIOLATION_CODES.find(v => v.code === e.target.value);
+                      setNewViolation({ ...newViolation, idViolation: e.target.value, family: meta?.family || '' });
+                    }}
+                    className={ic}>
+                    <option value="">Select violation type</option>
+                    {VIOLATION_CODES.map(v => <option key={v.code} value={v.code}>{v.label}</option>)}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">MP Code <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.mpCode}
-                    onChange={(e) => setNewViolation({...newViolation, mpCode: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                    placeholder="noon" />
-                  <p className="text-xs text-gray-400 mt-1">Auto-filled</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Violation <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.idViolation}
-                    onChange={(e) => handleFormFieldChange('idViolation', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Violation code name" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Violation Date <span className="text-red-500">*</span></label>
-                  <input type="date" required value={newViolation.violationDate}
-                    onChange={(e) => setNewViolation({...newViolation, violationDate: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Penalty <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.idPenalty}
-                    onChange={(e) => setNewViolation({...newViolation, idPenalty: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Penalty ID" />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Classification */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Classification</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Family <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.family}
-                    onChange={(e) => setNewViolation({...newViolation, family: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Violation family" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand Code <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.brandCode}
-                    onChange={(e) => handleFormFieldChange('brandCode', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Brand code" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand Name</label>
-                  <input type="text" value={newViolation.brandName}
-                    onChange={(e) => handleFormFieldChange('brandName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Brand name" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Overall Risk <span className="text-red-500">*</span></label>
-                  <select required value={newViolation.overallRisk}
-                    onChange={(e) => setNewViolation({...newViolation, overallRisk: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select risk</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Request Source <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.requestSource}
-                    onChange={(e) => setNewViolation({...newViolation, requestSource: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Source of request" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Warning Count <span className="text-red-500">*</span></label>
-                  <input type="number" required min="0" value={newViolation.warningCount}
-                    onChange={(e) => handleFormFieldChange('warningCount', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0" />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3: Investigation */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Investigation</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Investigation Type</label>
-                  <input type="text" value={newViolation.investigationType}
-                    onChange={(e) => setNewViolation({...newViolation, investigationType: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Investigation type" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Investigation Status</label>
-                  <select value={newViolation.investigationStatus}
-                    onChange={(e) => setNewViolation({...newViolation, investigationStatus: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select status</option>
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-                <div className="flex items-center space-x-3 pt-6">
-                  <input type="checkbox" id="triggeredByFlag" checked={newViolation.triggeredByFlag}
-                    onChange={(e) => setNewViolation({...newViolation, triggeredByFlag: e.target.checked})}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded" />
-                  <label htmlFor="triggeredByFlag" className="text-sm font-medium text-gray-700">Triggered by Flag</label>
-                </div>
-                <div className="flex items-center space-x-3 pt-6">
-                  <input type="checkbox" id="investigatedAcquitted" checked={newViolation.investigatedAcquitted}
-                    onChange={(e) => setNewViolation({...newViolation, investigatedAcquitted: e.target.checked})}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded" />
-                  <label htmlFor="investigatedAcquitted" className="text-sm font-medium text-gray-700">Investigated and Acquitted</label>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 4: SKU / Ticket */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">SKU / Ticket</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU / ASN <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.skuAsn}
-                    onChange={(e) => handleFormFieldChange('skuAsn', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="SKU or ASN" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Complaint Ticket <span className="text-red-500">*</span></label>
-                  <input type="text" required value={newViolation.complaintTicket}
-                    onChange={(e) => setNewViolation({...newViolation, complaintTicket: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ticket ID" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Seller Rating</label>
-                  <input type="text" value={newViolation.currentSellerRating}
-                    onChange={(e) => setNewViolation({...newViolation, currentSellerRating: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. 4.2" />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 5: Actions */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Actions</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Action Taken on Offers / SKUs</label>
-                  <input type="text" value={newViolation.actionOnOffers}
-                    onChange={(e) => setNewViolation({...newViolation, actionOnOffers: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Describe action taken" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Disapproval Reason</label>
-                  <input type="text" value={newViolation.disapprovalReason}
-                    onChange={(e) => setNewViolation({...newViolation, disapprovalReason: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Reason for disapproval" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Actioned Reason</label>
-                  <input type="text" value={newViolation.actionedReason}
-                    onChange={(e) => setNewViolation({...newViolation, actionedReason: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Reason for action" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Action Code</label>
-                  <input type="text" value={newViolation.actionCode}
-                    onChange={(e) => setNewViolation({...newViolation, actionCode: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Action code" />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 6: Additional Info */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Additional Info</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Approver 2</label>
-                  <input type="text" value={newViolation.approver2}
-                    onChange={(e) => setNewViolation({...newViolation, approver2: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Approver name or ID" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel</label>
-                  <input type="text" value={newViolation.channel}
-                    onChange={(e) => setNewViolation({...newViolation, channel: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Channel" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Misc</label>
-                  <input type="text" value={newViolation.misc}
-                    onChange={(e) => setNewViolation({...newViolation, misc: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Miscellaneous notes" />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 7: Message to Seller */}
-            <div>
-              <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <FileText className="w-4 h-4 inline mr-2" />
-                    Message Template
-                  </label>
-                  {selectedTemplate && (
-                    <button type="button" onClick={() => { setSelectedTemplate(null); setNewViolation({...newViolation, messageToSeller: ''}); }}
-                      className="text-sm text-gray-500 hover:text-gray-800">Clear</button>
+                  {selectedViolationMeta && (
+                    <p className="mt-1 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
+                      {selectedViolationMeta.description} · <span className="font-medium">{selectedViolationMeta.family}</span>
+                    </p>
                   )}
                 </div>
-                <select
-                  value={selectedTemplate?.id || ''}
-                  onChange={(e) => {
-                    const t = mockMessageTemplates.find(t => t.id === e.target.value);
-                    if (t) handleTemplateSelect(t);
-                    else { setSelectedTemplate(null); setNewViolation({...newViolation, messageToSeller: ''}); }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Select a template (optional)</option>
-                  {mockMessageTemplates.filter(t => t.isActive).map(t => (
-                    <option key={t.id} value={t.id}>{t.name} — {t.violationType} ({t.severity})</option>
-                  ))}
-                </select>
-                {selectedTemplate && <p className="text-xs text-gray-500">{selectedTemplate.description}</p>}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Source of Request <span className="text-red-500">*</span></label>
+                    <input type="text" value={newViolation.requestSource}
+                      onChange={(e) => setNewViolation({ ...newViolation, requestSource: e.target.value })}
+                      className={ic} placeholder="e.g. Brand Report, Customer Complaint" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date of Violation <span className="text-red-500">*</span></label>
+                    <input type="date" value={newViolation.violationDate}
+                      onChange={(e) => setNewViolation({ ...newViolation, violationDate: e.target.value })}
+                      className={ic} />
+                  </div>
+                </div>
               </div>
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Message to Seller
-                  {selectedTemplate && <span className="text-xs text-blue-600 ml-2">(Generated from template — update Partner ID or fields above to refresh)</span>}
-                </label>
-                <textarea
-                  value={newViolation.messageToSeller}
-                  onChange={(e) => setNewViolation({...newViolation, messageToSeller: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={4}
-                  placeholder="Message to be sent to the seller" />
-              </div>
-            </div>
+            )}
 
-            <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddForm(false);
-                  setSelectedTemplate(null);
-                  setNewViolation({
-                    partnerID: '',
-                    countryCode: '',
-                    mpCode: 'noon',
-                    idViolation: '',
-                    violationDate: '',
-                    idPenalty: '',
-                    family: '',
-                    brandCode: '',
-                    overallRisk: '',
-                    requestSource: '',
-                    triggeredByFlag: false,
-                    investigationType: '',
-                    investigationStatus: '',
-                    skuAsn: '',
-                    complaintTicket: '',
-                    currentSellerRating: '',
-                    brandName: '',
-                    actionOnOffers: '',
-                    disapprovalReason: '',
-                    investigatedAcquitted: false,
-                    actionedReason: '',
-                    actionCode: '',
-                    warningCount: '',
-                    approver2: '',
-                    channel: '',
-                    misc: '',
-                    messageToSeller: ''
-                  });
-                }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Add Violation
-              </button>
+            {/* ── STEP 2: Violation Details + Seller Panel ── */}
+            {wizardStep === 2 && (
+              <div className="flex gap-6 items-start">
+                <div className="flex-1 min-w-0 space-y-5">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">General</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Overall Risk <span className="text-red-500">*</span></label>
+                        <select value={newViolation.overallRisk}
+                          onChange={(e) => setNewViolation({ ...newViolation, overallRisk: e.target.value })}
+                          className={ic}>
+                          <option value="">Select risk</option>
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                          <option value="critical">Critical</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Complaint Ticket <span className="text-red-500">*</span></label>
+                        <input type="text" value={newViolation.complaintTicket}
+                          onChange={(e) => setNewViolation({ ...newViolation, complaintTicket: e.target.value })}
+                          className={ic} placeholder="Ticket ID" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">ID Penalty</label>
+                        <input type="text" value={newViolation.idPenalty}
+                          onChange={(e) => setNewViolation({ ...newViolation, idPenalty: e.target.value })}
+                          className={ic} placeholder="Penalty ID" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Family</label>
+                        <input type="text" readOnly value={newViolation.family || selectedViolationMeta?.family || ''}
+                          className={`${ic} bg-gray-50 text-gray-500`} />
+                      </div>
+                    </div>
+                  </div>
+                  {step2SpecificFields.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                        Specific to {selectedViolationMeta?.label}
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        {step2SpecificFields.map(f => {
+                          const val = newViolation[f.field as keyof typeof newViolation];
+                          if (f.type === 'checkbox') return (
+                            <div key={f.field} className="flex items-center gap-2 pt-5">
+                              <input type="checkbox" id={`f-${f.field}`}
+                                checked={val as boolean}
+                                onChange={(e) => setNewViolation({ ...newViolation, [f.field]: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded" />
+                              <label htmlFor={`f-${f.field}`} className="text-sm font-medium text-gray-700">{f.label}</label>
+                            </div>
+                          );
+                          if (f.type === 'select') return (
+                            <div key={f.field}>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {f.label}{f.required && <span className="text-red-500 ml-1">*</span>}
+                              </label>
+                              <select value={val as string}
+                                onChange={(e) => setNewViolation({ ...newViolation, [f.field]: e.target.value })}
+                                className={ic}>
+                                <option value="">Select…</option>
+                                {f.selectOptions?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              </select>
+                            </div>
+                          );
+                          return (
+                            <div key={f.field}>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {f.label}{f.required && <span className="text-red-500 ml-1">*</span>}
+                              </label>
+                              <input type="text" value={val as string}
+                                onChange={(e) => setNewViolation({ ...newViolation, [f.field]: e.target.value })}
+                                className={ic} placeholder={f.label} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Seller side panel */}
+                <div className="w-64 flex-shrink-0 bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 text-sm">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seller Profile</p>
+                  {sellerInfo ? (
+                    <>
+                      <div>
+                        <p className="font-semibold text-gray-900">{sellerInfo.name}</p>
+                        <p className="text-gray-500 text-xs mt-0.5">ID: {newViolation.partnerID}</p>
+                      </div>
+                      <div className="space-y-1 text-gray-600 text-xs">
+                        <p>{sellerInfo.email}</p>
+                        <p>{sellerInfo.phone}</p>
+                        <p>Markets: {sellerInfo.countries.join(', ')}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Account Health</span>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${healthColor(sellerInfo.accountHealth)}`}>{sellerInfo.accountHealth}</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-500">Risk Score</span>
+                          <span className="text-xs font-bold text-gray-700">{sellerInfo.riskScore}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className={`h-1.5 rounded-full ${sellerInfo.riskScore >= 75 ? 'bg-red-500' : sellerInfo.riskScore >= 50 ? 'bg-orange-400' : sellerInfo.riskScore >= 25 ? 'bg-yellow-400' : 'bg-green-400'}`}
+                            style={{ width: `${sellerInfo.riskScore}%` }} />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Seller Rating</span>
+                        <span className="text-xs font-bold text-gray-700">★ {sellerInfo.sellerRating.toFixed(1)}</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-200">
+                        <p className="text-xs text-gray-500">Prior Violations: <span className="font-semibold text-gray-700">{sellerInfo.priorViolations}</span></p>
+                        {sellerInfo.lastViolation ? (
+                          <p className="text-xs text-gray-500 mt-1">Last: <span className="font-medium text-gray-700">{sellerInfo.lastViolation.label}</span> <span className="text-gray-400">({sellerInfo.lastViolation.date})</span></p>
+                        ) : (
+                          <p className="text-xs text-green-600 mt-1">No prior violations</p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-400 text-center py-6">Enter a known Seller ID in Step 1 to see profile data.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 3: Resolution + Summary Panel ── */}
+            {wizardStep === 3 && (
+              <div className="flex gap-6 items-start">
+                <div className="flex-1 min-w-0 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Action Code</label>
+                      <input type="text" value={newViolation.actionCode}
+                        onChange={(e) => setNewViolation({ ...newViolation, actionCode: e.target.value })}
+                        className={ic} placeholder="e.g. SUSPEND, WARN, RESTRICT" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Violation Status</label>
+                      <select value={violationStatus} onChange={(e) => setViolationStatus(e.target.value)} className={ic}>
+                        <option value="open">Open</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="actioned">Actioned</option>
+                        <option value="acquitted">Acquitted</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Owner</label>
+                      <input type="text" readOnly value="Current User (Auto-assigned)"
+                        className={`${ic} bg-gray-50 text-gray-500`} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Warning Count</label>
+                      <input type="number" min="0" value={newViolation.warningCount}
+                        onChange={(e) => handleFormFieldChange('warningCount', e.target.value)}
+                        className={ic} placeholder="0" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Private Notes</label>
+                    <textarea value={privateNotes} onChange={(e) => setPrivateNotes(e.target.value)}
+                      className={ic} rows={2} placeholder="Internal notes — not visible to seller" />
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4" />Message Template
+                      </label>
+                      {selectedTemplate && (
+                        <button type="button" onClick={() => { setSelectedTemplate(null); setNewViolation({ ...newViolation, messageToSeller: '' }); }}
+                          className="text-xs text-gray-400 hover:text-gray-700">Clear</button>
+                      )}
+                    </div>
+                    <select value={selectedTemplate?.id || ''}
+                      onChange={(e) => {
+                        const t = mockMessageTemplates.find(t => t.id === e.target.value);
+                        if (t) handleTemplateSelect(t);
+                        else { setSelectedTemplate(null); setNewViolation({ ...newViolation, messageToSeller: '' }); }
+                      }}
+                      className={ic}>
+                      <option value="">Select a template (optional)</option>
+                      {mockMessageTemplates.filter(t => t.isActive).map(t => (
+                        <option key={t.id} value={t.id}>{t.name} — {t.violationType} ({t.severity})</option>
+                      ))}
+                    </select>
+                    {selectedTemplate && <p className="text-xs text-gray-500">{selectedTemplate.description}</p>}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Message to Seller{selectedTemplate && <span className="text-xs text-blue-600 ml-2">(from template)</span>}
+                      </label>
+                      <textarea value={newViolation.messageToSeller}
+                        onChange={(e) => setNewViolation({ ...newViolation, messageToSeller: e.target.value })}
+                        className={ic} rows={4} placeholder="Message to be sent to the seller" />
+                    </div>
+                  </div>
+                  {/* Verdict panel */}
+                  {showVerdictPanel && (
+                    <div className="border border-orange-200 bg-orange-50 rounded-xl p-4 space-y-3">
+                      <p className="text-sm font-semibold text-orange-800">Verdict — closes the violation ticket</p>
+                      <div className="flex gap-3">
+                        {(['actioned', 'acquitted'] as const).map(type => (
+                          <button key={type} type="button"
+                            onClick={() => setVerdict(v => ({ ...v, type }))}
+                            className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors
+                              ${verdict.type === type
+                                ? type === 'actioned' ? 'bg-red-600 text-white border-red-600' : 'bg-green-600 text-white border-green-600'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
+                            {type === 'actioned' ? 'Actioned' : 'Acquitted'}
+                          </button>
+                        ))}
+                      </div>
+                      {verdict.type && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {verdict.type === 'actioned' ? 'Action Reason' : 'Acquittal Reason'} <span className="text-red-500">*</span>
+                          </label>
+                          <textarea value={verdict.reason}
+                            onChange={(e) => setVerdict(v => ({ ...v, reason: e.target.value }))}
+                            className={ic} rows={2}
+                            placeholder={verdict.type === 'actioned' ? 'Why was this violation actioned?' : 'Why is the seller acquitted?'} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Violation summary side panel */}
+                <div className="w-64 flex-shrink-0 bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 text-sm">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Violation Summary</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">Seller</span>
+                      <span className="text-gray-800 text-xs font-medium text-right">{sellerInfo?.name || newViolation.partnerID}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">Country</span>
+                      <span className="text-gray-800 text-xs font-medium">{newViolation.countryCode} — {COUNTRY_LABELS[newViolation.countryCode]}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">Violation</span>
+                      <span className="text-gray-800 text-xs font-medium text-right">{selectedViolationMeta?.label || newViolation.idViolation}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">Family</span>
+                      <span className="text-gray-800 text-xs font-medium">{selectedViolationMeta?.family}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">Date</span>
+                      <span className="text-gray-800 text-xs font-medium">{newViolation.violationDate}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">Source</span>
+                      <span className="text-gray-800 text-xs font-medium text-right">{newViolation.requestSource}</span>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-gray-200 space-y-2">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">Risk</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${newViolation.overallRisk === 'critical' ? 'bg-red-100 text-red-700' : newViolation.overallRisk === 'high' ? 'bg-orange-100 text-orange-700' : newViolation.overallRisk === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                        {newViolation.overallRisk || '—'}
+                      </span>
+                    </div>
+                    {newViolation.complaintTicket && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-gray-500 text-xs flex-shrink-0">Ticket</span>
+                        <span className="text-gray-800 text-xs font-medium">{newViolation.complaintTicket}</span>
+                      </div>
+                    )}
+                    {sellerInfo && (
+                      <>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-500 text-xs flex-shrink-0">Rating</span>
+                          <span className="text-gray-800 text-xs font-medium">★ {sellerInfo.sellerRating.toFixed(1)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-500 text-xs flex-shrink-0">Prior</span>
+                          <span className={`text-xs font-bold ${sellerInfo.priorViolations > 5 ? 'text-red-600' : sellerInfo.priorViolations > 0 ? 'text-orange-600' : 'text-green-600'}`}>{sellerInfo.priorViolations} violations</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* Footer navigation */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
+            <button type="button"
+              onClick={wizardStep === 1 ? handleFormClose : () => setWizardStep(s => s - 1)}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100">
+              {wizardStep === 1 ? 'Cancel' : '← Back'}
+            </button>
+            <div className="flex items-center gap-2">
+              {wizardStep < 3 && (
+                <button type="button"
+                  onClick={() => setWizardStep(s => s + 1)}
+                  disabled={wizardStep === 1 ? !isStep1Valid() : !isStep2Valid()}
+                  className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+                  Continue →
+                </button>
+              )}
+              {wizardStep === 3 && (
+                <>
+                  <button type="button"
+                    onClick={() => { setShowVerdictPanel(!showVerdictPanel); if (showVerdictPanel) setVerdict({ type: '', reason: '' }); }}
+                    className={`px-4 py-2 text-sm rounded-lg border transition-colors ${showVerdictPanel ? 'border-orange-400 text-orange-700 bg-orange-50 hover:bg-orange-100' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                    {showVerdictPanel ? '✕ Cancel Verdict' : 'Add Verdict'}
+                  </button>
+                  {!showVerdictPanel && (
+                    <button type="button" onClick={handleAddViolation}
+                      className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                      Submit Violation
+                    </button>
+                  )}
+                  {showVerdictPanel && (
+                    <button type="button" onClick={handleSubmitVerdict}
+                      disabled={!verdict.type || !verdict.reason.trim()}
+                      className="px-5 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+                      Submit Verdict & Close Ticket
+                    </button>
+                  )}
+                </>
+              )}
             </div>
-          </form>
+          </div>
         </div>
       )}
 

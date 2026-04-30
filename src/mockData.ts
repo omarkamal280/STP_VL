@@ -299,3 +299,74 @@ export const templatePlaceholders: TemplatePlaceholder[] = [
     example: '2024-03-20'
   }
 ];
+
+export interface MockSellerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  countries: string[];
+  accountHealth: 'Good' | 'Fair' | 'Poor' | 'Critical';
+  riskScore: number;
+  priorViolations: number;
+  lastViolation: { label: string; date: string } | null;
+  sellerRating: number;
+}
+
+export const mockSellers: Record<string, MockSellerInfo> = {
+  '442777': {
+    name: 'Al-Rashid Trading Co.', email: 'compliance@alrashid.ae', phone: '+971 4 555 0101',
+    countries: ['AE', 'SA'], accountHealth: 'Fair', riskScore: 62,
+    priorViolations: 3,
+    lastViolation: { label: 'IP Violation', date: '2024-11-15' },
+    sellerRating: 3.8,
+  },
+  '10555': {
+    name: 'Gulf Electronics LLC', email: 'seller@gulfelectronics.sa', phone: '+966 11 555 0202',
+    countries: ['SA', 'EG', 'KW'], accountHealth: 'Good', riskScore: 18,
+    priorViolations: 1,
+    lastViolation: { label: 'Duplicate Listing', date: '2025-01-03' },
+    sellerRating: 4.6,
+  },
+  '492959': {
+    name: 'Sharjah Goods Est.', email: 'ops@sharjahgoods.ae', phone: '+971 6 555 0303',
+    countries: ['AE', 'QA', 'BH'], accountHealth: 'Poor', riskScore: 81,
+    priorViolations: 7,
+    lastViolation: { label: 'Counterfeit Sale', date: '2025-02-20' },
+    sellerRating: 2.9,
+  },
+  '783421': {
+    name: 'Cairo Retail Hub', email: 'accounts@cairoretail.eg', phone: '+20 2 555 0404',
+    countries: ['EG'], accountHealth: 'Good', riskScore: 24,
+    priorViolations: 0,
+    lastViolation: null,
+    sellerRating: 4.8,
+  },
+  '912567': {
+    name: 'Kuwait Marketplace', email: 'seller@kuwaitmp.kw', phone: '+965 2 555 0505',
+    countries: ['KW', 'BH', 'OM'], accountHealth: 'Fair', riskScore: 47,
+    priorViolations: 2,
+    lastViolation: { label: 'Fake Feedback / Reviews', date: '2024-09-12' },
+    sellerRating: 4.1,
+  },
+  '334890': {
+    name: 'Desert Rose Sellers', email: 'info@desertrose.sa', phone: '+966 12 555 0606',
+    countries: ['SA', 'OM'], accountHealth: 'Critical', riskScore: 94,
+    priorViolations: 12,
+    lastViolation: { label: 'Money Laundering', date: '2025-03-05' },
+    sellerRating: 2.1,
+  },
+  '667123': {
+    name: 'Doha Direct', email: 'dohadirect@qa.com', phone: '+974 4 555 0707',
+    countries: ['QA', 'BH'], accountHealth: 'Good', riskScore: 11,
+    priorViolations: 1,
+    lastViolation: { label: 'Abusive Communication', date: '2024-12-01' },
+    sellerRating: 4.5,
+  },
+  '445678': {
+    name: 'Nile Valley Commerce', email: 'nilevc@eg.com', phone: '+20 3 555 0808',
+    countries: ['EG', 'SA'], accountHealth: 'Fair', riskScore: 55,
+    priorViolations: 4,
+    lastViolation: { label: 'Prohibited Product', date: '2025-01-28' },
+    sellerRating: 3.5,
+  },
+};
