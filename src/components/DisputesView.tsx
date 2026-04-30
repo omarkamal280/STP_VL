@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy component, superseded by ops/DisputesQueue in perfect-system branch
 import React, { useState } from 'react';
 import { MessageSquare, FileText, ExternalLink, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { mockDisputes } from '../mockData';

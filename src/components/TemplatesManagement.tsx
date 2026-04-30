@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Copy, Check, X, AlertCircle, Code } from 'lucide-react';
-import { mockMessageTemplates, templatePlaceholders } from '../mockData';
+import { mockMessageTemplates, mockTemplatePlaceholders as templatePlaceholders } from '../mockData';
 import { MessageTemplate, TemplatePlaceholder } from '../types';
 
 interface TemplatesManagementProps {

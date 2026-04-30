@@ -323,9 +323,9 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     if (searchTerm) {
       filtered = filtered.filter(v => 
         v.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.sellerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.projectId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.type.toLowerCase().includes(searchTerm.toLowerCase())
+        (v.sellerId ?? v.partnerID ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (v.projectId ?? v.complaintTicket ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (v.type ?? v.idViolation ?? '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
