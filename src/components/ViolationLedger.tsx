@@ -106,8 +106,6 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     newViolation.violationDate !== '';
 
   const isStep2Valid = () =>
-    newViolation.overallRisk !== '' &&
-    newViolation.complaintTicket.trim() !== '' &&
     step2SpecificFields
       .filter(f => f.required && f.type !== 'checkbox')
       .every(f => (newViolation[f.field as keyof typeof newViolation] as string) !== '');
@@ -504,40 +502,6 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
             {wizardStep === 2 && (
               <div className="flex gap-6 items-start">
                 <div className="flex-1 min-w-0 space-y-5">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">General</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Overall Risk <span className="text-red-500">*</span></label>
-                        <select value={newViolation.overallRisk}
-                          onChange={(e) => setNewViolation({ ...newViolation, overallRisk: e.target.value })}
-                          className={ic}>
-                          <option value="">Select risk</option>
-                          <option value="low">Low</option>
-                          <option value="medium">Medium</option>
-                          <option value="high">High</option>
-                          <option value="critical">Critical</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Complaint Ticket <span className="text-red-500">*</span></label>
-                        <input type="text" value={newViolation.complaintTicket}
-                          onChange={(e) => setNewViolation({ ...newViolation, complaintTicket: e.target.value })}
-                          className={ic} placeholder="Ticket ID" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">ID Penalty</label>
-                        <input type="text" value={newViolation.idPenalty}
-                          onChange={(e) => setNewViolation({ ...newViolation, idPenalty: e.target.value })}
-                          className={ic} placeholder="Penalty ID" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Family</label>
-                        <input type="text" readOnly value={newViolation.family || selectedViolationMeta?.family || ''}
-                          className={`${ic} bg-gray-50 text-gray-500`} />
-                      </div>
-                    </div>
-                  </div>
                   {step2SpecificFields.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -762,6 +726,21 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                       <span className="text-gray-800 text-xs font-medium text-right">{newViolation.requestSource}</span>
                     </div>
                   </div>
+                  {step2SpecificFields.length > 0 && (
+                    <div className="pt-2 border-t border-gray-200 space-y-2">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{selectedViolationMeta?.label} — Specific</p>
+                      {step2SpecificFields.map(f => {
+                        const val = newViolation[f.field as keyof typeof newViolation];
+                        const display = typeof val === 'boolean' ? (val ? 'Yes' : 'No') : (val as string) || '—';
+                        return (
+                          <div key={f.field} className="flex justify-between gap-2">
+                            <span className="text-gray-500 text-xs flex-shrink-0">{f.label}</span>
+                            <span className="text-gray-800 text-xs font-medium text-right">{display}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div className="pt-2 border-t border-gray-200 space-y-2">
                     <div className="flex justify-between gap-2">
                       <span className="text-gray-500 text-xs flex-shrink-0">Risk</span>
