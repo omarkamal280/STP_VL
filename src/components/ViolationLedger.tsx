@@ -353,6 +353,8 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     handleFormClose();
   };
 
+  const TERMINAL_STATUSES: Violation['status'][] = ['enforced', 'exonerated'];
+
   const handleViolationClick = (violation: Violation) => {
     setSelectedViolation(violation);
     setIsModalOpen(true);
@@ -374,10 +376,11 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
 
   const getStatusColor = (status: Violation['status']) => {
     switch (status) {
-      case 'active': return 'bg-gray-100 text-gray-800';
-      case 'disputed': return 'bg-purple-100 text-purple-800';
-      case 'enforced': return 'bg-red-100 text-red-800';
+      case 'active':     return 'bg-blue-100 text-blue-700';
+      case 'disputed':   return 'bg-orange-100 text-orange-700';
+      case 'enforced':   return 'bg-red-100 text-red-800';
       case 'exonerated': return 'bg-green-100 text-green-800';
+      default:           return 'bg-gray-100 text-gray-600';
     }
   };
 
@@ -666,17 +669,24 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                         className={ic} rows={4} placeholder="Message to be sent to the seller" />
                     </div>
                   </div>
-                  {/* Verdict panel */}
-                  {showVerdictPanel && (
-                    <div className="border border-orange-200 bg-orange-50 rounded-xl p-4 space-y-3">
-                      <p className="text-sm font-semibold text-orange-800">Verdict — closes the violation ticket</p>
-                      <div className="flex gap-3">
-                        {(['actioned', 'acquitted'] as const).map(type => (
-                          <button key={type} type="button"
-                            onClick={() => setVerdict(v => ({ ...v, type }))}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors
-                              ${verdict.type === type
-                                ? type === 'actioned' ? 'bg-red-600 text-white border-red-600' : 'bg-green-600 text-white border-green-600'
+                  <div className="border border-orange-100 bg-orange-50 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                        <span className="text-orange-500">⚡</span> Verdict (optional)
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                        <input type="checkbox" checked={showVerdictPanel} onChange={e => setShowVerdictPanel(e.target.checked)} />
+                        Include verdict
+                      </label>
+                    </div>
+                    {showVerdictPanel && (
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          {(['actioned', 'acquitted'] as const).map(type => (
+                            <button key={type} type="button" onClick={() => setVerdict(v => ({ ...v, type }))}
+                              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                verdict.type === type
+                                  ? type === 'actioned' ? 'bg-red-600 text-white border-red-600' : 'bg-green-600 text-white border-green-600'
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
                             {type === 'actioned' ? 'Actioned' : 'Acquitted'}
                           </button>
@@ -695,6 +705,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                       )}
                     </div>
                   )}
+                </div>
                 </div>
 
                 {/* Violation summary side panel */}
@@ -952,23 +963,30 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                   {violation.createdAt.toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button 
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViolationClick(violation);
-                    }}
-                  >
-                    View Details
-                  </button>
-                  {violation.zohoTicketId && (
+                  <div className="flex items-center gap-2">
                     <button 
-                      className="text-green-600 hover:text-green-900"
-                      onClick={(e) => e.stopPropagation()}
+                      className="text-blue-600 hover:text-blue-900"
+                      onClick={(e) => { e.stopPropagation(); handleViolationClick(violation); }}
                     >
-                      View Ticket
+                      View
                     </button>
-                  )}
+                    {!TERMINAL_STATUSES.includes(violation.status) && (
+                      <button
+                        className="px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg transition-colors"
+                        onClick={(e) => { e.stopPropagation(); handleViolationClick(violation); }}
+                      >
+                        Give Verdict
+                      </button>
+                    )}
+                    {violation.zohoTicketId && (
+                      <button 
+                        className="text-green-600 hover:text-green-900 text-xs"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Ticket
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
