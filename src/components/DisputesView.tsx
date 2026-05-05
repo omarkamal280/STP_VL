@@ -12,7 +12,7 @@ const DisputesView: React.FC = () => {
     filterStatus === 'all' || d.status === filterStatus
   );
 
-  const handleResolve = (action: 'enforced' | 'exonerated') => {
+  const handleResolve = (action: 'upheld' | 'dismissed') => {
     if (!selectedDispute || !replyText.trim()) {
       alert('Please provide a reply before resolving the dispute');
       return;
@@ -28,17 +28,19 @@ const DisputesView: React.FC = () => {
 
   const getStatusIcon = (status: Dispute['status']) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-600" />;
-      case 'under_review': return <MessageSquare className="w-4 h-4 text-blue-600" />;
-      case 'resolved': return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'pending':   return <Clock className="w-4 h-4 text-yellow-600" />;
+      case 'dismissed': return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'upheld':    return <XCircle className="w-4 h-4 text-red-600" />;
+      case 'appealed':  return <MessageSquare className="w-4 h-4 text-blue-600" />;
     }
   };
 
   const getStatusColor = (status: Dispute['status']) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'under_review': return 'bg-blue-100 text-blue-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
+      case 'pending':   return 'bg-yellow-100 text-yellow-800';
+      case 'dismissed': return 'bg-green-100 text-green-800';
+      case 'upheld':    return 'bg-red-100 text-red-800';
+      case 'appealed':  return 'bg-blue-100 text-blue-800';
     }
   };
 
@@ -54,8 +56,9 @@ const DisputesView: React.FC = () => {
           >
             <option value="all">All Statuses</option>
             <option value="pending">Pending</option>
-            <option value="under_review">Under Review</option>
-            <option value="resolved">Resolved</option>
+            <option value="upheld">Upheld</option>
+            <option value="appealed">Appealed</option>
+            <option value="dismissed">Dismissed</option>
           </select>
         </div>
 
@@ -102,18 +105,20 @@ const DisputesView: React.FC = () => {
                 </div>
               </div>
 
-              {dispute.status === 'resolved' && dispute.resolution && (
+              {(dispute.status === 'dismissed' || dispute.status === 'upheld' || dispute.status === 'appealed') && dispute.opsReply && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <div className="flex items-center space-x-2">
-                    {dispute.resolution.action === 'enforced' ? (
+                    {dispute.status === 'upheld' ? (
                       <XCircle className="w-4 h-4 text-red-600" />
-                    ) : (
+                    ) : dispute.status === 'dismissed' ? (
                       <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <MessageSquare className="w-4 h-4 text-blue-600" />
                     )}
                     <span className={`text-sm font-medium ${
-                      dispute.resolution.action === 'enforced' ? 'text-red-600' : 'text-green-600'
+                      dispute.status === 'upheld' ? 'text-red-600' : dispute.status === 'appealed' ? 'text-blue-600' : 'text-green-600'
                     }`}>
-                      {dispute.resolution.action === 'enforced' ? 'Violation Enforced' : 'Seller Exonerated'}
+                      {dispute.status === 'upheld' ? 'Violation Upheld' : dispute.status === 'appealed' ? 'Escalated for Final Review' : 'Violation Dismissed'}
                     </span>
                   </div>
                 </div>
@@ -199,51 +204,55 @@ const DisputesView: React.FC = () => {
                   </div>
                 </div>
 
-                {selectedDispute.status === 'resolved' && selectedDispute.resolution && (
+                {(selectedDispute.status === 'dismissed' || selectedDispute.status === 'upheld' || selectedDispute.status === 'appealed') && selectedDispute.opsReply && (
                   <div className="pt-4 border-t border-gray-200">
                     <div className="mb-4">
                       <div className="flex items-center space-x-2 mb-2">
-                        {selectedDispute.resolution.action === 'enforced' ? (
+                        {selectedDispute.status === 'upheld' ? (
                           <XCircle className="w-5 h-5 text-red-600" />
-                        ) : (
+                        ) : selectedDispute.status === 'dismissed' ? (
                           <CheckCircle className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <MessageSquare className="w-5 h-5 text-blue-600" />
                         )}
                         <label className="text-sm font-medium text-gray-700">Resolution</label>
                       </div>
                       <p className={`text-sm font-semibold ${
-                        selectedDispute.resolution.action === 'enforced' ? 'text-red-600' : 'text-green-600'
+                        selectedDispute.status === 'upheld' ? 'text-red-600' : selectedDispute.status === 'appealed' ? 'text-blue-600' : 'text-green-600'
                       }`}>
-                        {selectedDispute.resolution.action === 'enforced' ? 'Violation Enforced' : 'Seller Exonerated'}
+                        {selectedDispute.status === 'upheld' ? 'Violation Upheld' : selectedDispute.status === 'appealed' ? 'Escalated for Final Review' : 'Violation Dismissed'}
                       </p>
                     </div>
 
                     <div className="mb-4">
                       <label className="text-sm font-medium text-gray-700 mb-2 block">Team Reply</label>
                       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <p className="text-gray-900 text-sm leading-relaxed">{selectedDispute.resolution.reply}</p>
+                        <p className="text-gray-900 text-sm leading-relaxed">{selectedDispute.opsReply}</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <label className="text-gray-600">Resolved By</label>
-                        <p className="text-gray-900 font-medium">{selectedDispute.resolution.resolvedBy}</p>
+                    {selectedDispute.opsRepliedBy && selectedDispute.opsRepliedAt && (
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <label className="text-gray-600">Replied By</label>
+                          <p className="text-gray-900 font-medium">{selectedDispute.opsRepliedBy}</p>
+                        </div>
+                        <div>
+                          <label className="text-gray-600">Reply Date</label>
+                          <p className="text-gray-900 font-medium">
+                            {selectedDispute.opsRepliedAt.toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-gray-600">Resolved Date</label>
-                        <p className="text-gray-900 font-medium">
-                          {selectedDispute.resolution.resolvedAt.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
-                {selectedDispute.status !== 'resolved' && (
+                {selectedDispute.status === 'pending' && (
                   <div className="pt-4 border-t border-gray-200">
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
                       Your Reply <span className="text-red-500">*</span>
@@ -258,18 +267,18 @@ const DisputesView: React.FC = () => {
 
                     <div className="flex space-x-3">
                       <button
-                        onClick={() => handleResolve('exonerated')}
+                        onClick={() => handleResolve('dismissed')}
                         className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        <span>Exonerate Seller</span>
+                        <span>Dismiss</span>
                       </button>
                       <button
-                        onClick={() => handleResolve('enforced')}
+                        onClick={() => handleResolve('upheld')}
                         className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
                       >
                         <XCircle className="w-4 h-4" />
-                        <span>Enforce Violation</span>
+                        <span>Uphold Violation</span>
                       </button>
                     </div>
                   </div>

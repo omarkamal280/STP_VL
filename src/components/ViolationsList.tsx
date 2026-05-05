@@ -69,10 +69,13 @@ const ViolationsList: React.FC = () => {
 
   const getStatusColor = (status: Violation['status']) => {
     switch (status) {
-      case 'active': return 'bg-gray-100 text-gray-800';
-      case 'disputed': return 'bg-purple-100 text-purple-800';
-      case 'enforced': return 'bg-red-100 text-red-800';
-      case 'exonerated': return 'bg-green-100 text-green-800';
+      case 'sanctioned':              return 'bg-orange-100 text-orange-800';
+      case 'disputed':                return 'bg-yellow-100 text-yellow-800';
+      case 'sanctioned_acknowledged': return 'bg-purple-100 text-purple-800';
+      case 'upheld':                  return 'bg-red-100 text-red-800';
+      case 'appealed':                return 'bg-blue-100 text-blue-800';
+      case 'dismissed':               return 'bg-green-100 text-green-800';
+      case 'voided':                  return 'bg-gray-100 text-gray-500';
     }
   };
 
@@ -107,10 +110,13 @@ const ViolationsList: React.FC = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Statuses</option>
-              <option value="active">Active</option>
+              <option value="sanctioned">Sanctioned</option>
               <option value="disputed">Disputed</option>
-              <option value="enforced">Enforced</option>
-              <option value="exonerated">Exonerated</option>
+              <option value="sanctioned_acknowledged">Acknowledged</option>
+              <option value="appealed">Appealed</option>
+              <option value="upheld">Upheld</option>
+              <option value="dismissed">Dismissed</option>
+              <option value="voided">Voided</option>
             </select>
             
             <select
@@ -243,7 +249,7 @@ const ViolationsList: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button className="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
-                  {violation.status === 'active' && (
+                  {violation.status === 'sanctioned' && (
                     <button className="text-purple-600 hover:text-purple-900">Create Dispute</button>
                   )}
                 </td>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Database } from 'lucide-react';
+import { CALL_TO_ACTIONS } from '../ctaData';
 
 interface ViolationDataProps {
   onNavigate?: (tab: string, state?: any) => void;
@@ -9,78 +10,14 @@ interface ViolationDataProps {
 const ViolationData: React.FC<ViolationDataProps> = () => {
   // Static violations data
   const violationsData = [
-    {
-      id: 1,
-      name: 'Late Delivery',
-      type: 'DELIVERY',
-      blackPoints: 3,
-      severity: 'Medium',
-      descriptionEn: 'Orders delivered beyond the promised delivery date',
-      descriptionAr: 'Orders delivered beyond the promised delivery date'
-    },
-    {
-      id: 2,
-      name: 'Product Mismatch',
-      type: 'PRODUCT',
-      blackPoints: 5,
-      severity: 'High',
-      descriptionEn: 'Delivered product does not match listing description',
-      descriptionAr: 'Delivered product does not match listing description'
-    },
-    {
-      id: 3,
-      name: 'Counterfeit Goods',
-      type: 'PRODUCT',
-      blackPoints: 10,
-      severity: 'Critical',
-      descriptionEn: 'Suspected counterfeit branded items',
-      descriptionAr: 'Suspected counterfeit branded items'
-    },
-    {
-      id: 4,
-      name: 'Poor Packaging',
-      type: 'PACKAGING',
-      blackPoints: 2,
-      severity: 'Low',
-      descriptionEn: 'Items arrived damaged due to inadequate packaging',
-      descriptionAr: 'Items arrived damaged due to inadequate packaging'
-    },
-    {
-      id: 5,
-      name: 'Unresponsive Communication',
-      type: 'COMMUNICATION',
-      blackPoints: 4,
-      severity: 'Medium',
-      descriptionEn: 'Seller not responding within required timeframe',
-      descriptionAr: 'Seller not responding within required timeframe'
-    },
-    {
-      id: 6,
-      name: 'Fraudulent Activity',
-      type: 'FRAUD',
-      blackPoints: 10,
-      severity: 'Critical',
-      descriptionEn: 'Suspicious or fraudulent seller behavior',
-      descriptionAr: 'Suspicious or fraudulent seller behavior'
-    },
-    {
-      id: 7,
-      name: 'Policy Violation',
-      type: 'POLICY',
-      blackPoints: 6,
-      severity: 'High',
-      descriptionEn: 'Violation of platform policies or terms',
-      descriptionAr: 'Violation of platform policies or terms'
-    },
-    {
-      id: 8,
-      name: 'Quality Issues',
-      type: 'QUALITY',
-      blackPoints: 4,
-      severity: 'Medium',
-      descriptionEn: 'Product quality below expected standards',
-      descriptionAr: 'Product quality below expected standards'
-    }
+    { id: 1,  name: 'Late Delivery',             type: 'DELIVERY',      blackPoints: 3,  severity: 'Medium',   descriptionEn: 'Orders delivered beyond the promised delivery date',           requiredCtaIds: ['CTA-04', 'CTA-05'] },
+    { id: 2,  name: 'Product Mismatch',           type: 'PRODUCT',       blackPoints: 5,  severity: 'High',     descriptionEn: 'Delivered product does not match listing description',         requiredCtaIds: ['CTA-01', 'CTA-07'] },
+    { id: 3,  name: 'Counterfeit Goods',          type: 'PRODUCT',       blackPoints: 10, severity: 'Critical', descriptionEn: 'Suspected counterfeit branded items',                          requiredCtaIds: ['CTA-01', 'CTA-02', 'CTA-09'] },
+    { id: 4,  name: 'Poor Packaging',             type: 'PACKAGING',     blackPoints: 2,  severity: 'Low',      descriptionEn: 'Items arrived damaged due to inadequate packaging',            requiredCtaIds: ['CTA-07'] },
+    { id: 5,  name: 'Unresponsive Communication', type: 'COMMUNICATION',  blackPoints: 4,  severity: 'Medium',   descriptionEn: 'Seller not responding within required timeframe',               requiredCtaIds: ['CTA-14', 'CTA-15'] },
+    { id: 6,  name: 'Fraudulent Activity',        type: 'FRAUD',         blackPoints: 10, severity: 'Critical', descriptionEn: 'Suspicious or fraudulent seller behavior',                     requiredCtaIds: ['CTA-09', 'CTA-18'] },
+    { id: 7,  name: 'Policy Violation',           type: 'POLICY',        blackPoints: 6,  severity: 'High',     descriptionEn: 'Violation of platform policies or terms',                      requiredCtaIds: ['CTA-07', 'CTA-18'] },
+    { id: 8,  name: 'Quality Issues',             type: 'QUALITY',       blackPoints: 4,  severity: 'Medium',   descriptionEn: 'Product quality below expected standards',                     requiredCtaIds: ['CTA-07'] },
   ];
 
   // Static violation types data
@@ -194,7 +131,7 @@ const ViolationData: React.FC<ViolationDataProps> = () => {
                   Description (EN)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description (AR)
+                  Required CTAs
                 </th>
               </tr>
             </thead>
@@ -218,11 +155,22 @@ const ViolationData: React.FC<ViolationDataProps> = () => {
                       {violation.severity}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
                     {violation.descriptionEn}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                    {violation.descriptionAr}
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1.5">
+                      {violation.requiredCtaIds.map(id => {
+                        const cta = CALL_TO_ACTIONS.find(c => c.id === id);
+                        return cta ? (
+                          <span key={id} title={cta.description} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium cursor-default">
+                            <span className="font-mono">{id}</span>
+                            <span className="text-indigo-500">·</span>
+                            {cta.name}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, Filter, AlertCircle, ExternalLink, FileText, Upload, Eye, Check, X } from 'lucide-react';
 import { mockViolations, mockDisputes, mockMessageTemplates, mockSellers } from '../mockData';
 import { VIOLATION_CODES, COUNTRY_LABELS } from '../violationSchemas';
+import { CALL_TO_ACTIONS } from '../ctaData';
 import { Violation, MessageTemplate } from '../types';
 import ViolationDetailModal from './ViolationDetailModal';
 
@@ -66,6 +67,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
   const [verdict, setVerdict] = useState<{ type: 'actioned' | 'acquitted' | ''; reason: string }>({ type: '', reason: '' });
   const [showVerdictPanel, setShowVerdictPanel] = useState(false);
   const [privateNotes, setPrivateNotes] = useState('');
+  const [selectedCtaIds, setSelectedCtaIds] = useState<string[]>([]);
   const [violationStatus, setViolationStatus] = useState('open');
 
   // Derived wizard state
@@ -92,6 +94,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     setSelectedTemplate(null);
     setWizardStep(1);
     setShowVerdictPanel(false);
+    setSelectedCtaIds([]);
     setVerdict({ type: '', reason: '' });
     setPrivateNotes('');
     setViolationStatus('open');
@@ -335,7 +338,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     // Filter active disputes only
     if (activeDisputesOnly) {
       const disputedViolationIds = mockDisputes
-        .filter(d => d.status === 'pending' || d.status === 'under_review')
+        .filter(d => d.status === 'pending')
         .map(d => d.violationId);
       filtered = filtered.filter(v => disputedViolationIds.includes(v.id));
     }
@@ -352,8 +355,6 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     console.log('Submitting verdict:', verdict, 'for violation:', newViolation.partnerID);
     handleFormClose();
   };
-
-  const TERMINAL_STATUSES: Violation['status'][] = ['enforced', 'exonerated'];
 
   const handleViolationClick = (violation: Violation) => {
     setSelectedViolation(violation);
@@ -376,11 +377,14 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
 
   const getStatusColor = (status: Violation['status']) => {
     switch (status) {
-      case 'active':     return 'bg-blue-100 text-blue-700';
-      case 'disputed':   return 'bg-orange-100 text-orange-700';
-      case 'enforced':   return 'bg-red-100 text-red-800';
-      case 'exonerated': return 'bg-green-100 text-green-800';
-      default:           return 'bg-gray-100 text-gray-600';
+      case 'sanctioned':              return 'bg-orange-100 text-orange-700';
+      case 'disputed':                return 'bg-yellow-100 text-yellow-700';
+      case 'sanctioned_acknowledged': return 'bg-purple-100 text-purple-700';
+      case 'upheld':                  return 'bg-red-100 text-red-700';
+      case 'appealed':                return 'bg-blue-100 text-blue-700';
+      case 'dismissed':               return 'bg-green-100 text-green-700';
+      case 'voided':                  return 'bg-gray-100 text-gray-500';
+      default:                        return 'bg-gray-100 text-gray-600';
     }
   };
 
@@ -473,6 +477,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                     onChange={(e) => {
                       const meta = VIOLATION_CODES.find(v => v.code === e.target.value);
                       setNewViolation({ ...newViolation, idViolation: e.target.value, family: meta?.family || '' });
+                      setSelectedCtaIds(meta?.requiredCtaIds ?? []);
                     }}
                     className={ic}>
                     <option value="">Select violation type</option>
@@ -505,6 +510,61 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
             {wizardStep === 2 && (
               <div className="flex gap-6 items-start">
                 <div className="flex-1 min-w-0 space-y-5">
+
+                  {/* ── CTA Checklist ── */}
+                  <div className="border border-indigo-100 bg-indigo-50 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Call to Actions</p>
+                      <span className="text-xs text-indigo-400">
+                        {selectedCtaIds.length} selected
+                        {(selectedViolationMeta?.requiredCtaIds?.length ?? 0) > 0 && (
+                          <span className="ml-1">· {selectedViolationMeta!.requiredCtaIds.length} required</span>
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-xs text-indigo-500">Required CTAs are locked. Select additional CTAs as needed.</p>
+                    <div className="h-64 overflow-y-auto rounded-lg border border-indigo-100 bg-white flex flex-col gap-0 divide-y divide-gray-100">
+                      {CALL_TO_ACTIONS.map(cta => {
+                        const isRequired = (selectedViolationMeta?.requiredCtaIds ?? []).includes(cta.id);
+                        const isChecked  = selectedCtaIds.includes(cta.id);
+                        return (
+                          <label
+                            key={cta.id}
+                            className={`flex items-start gap-3 px-3 py-2.5 transition-colors ${
+                              isRequired
+                                ? 'bg-indigo-50 cursor-not-allowed'
+                                : isChecked
+                                  ? 'bg-blue-50 cursor-pointer hover:bg-blue-50'
+                                  : 'bg-white cursor-pointer hover:bg-gray-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              disabled={isRequired}
+                              onChange={() => {
+                                if (isRequired) return;
+                                setSelectedCtaIds(prev =>
+                                  prev.includes(cta.id) ? prev.filter(id => id !== cta.id) : [...prev, cta.id]
+                                );
+                              }}
+                              className="mt-0.5 accent-indigo-600 flex-shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-xs text-indigo-400">{cta.id}</span>
+                                <span className={`text-sm font-semibold ${isRequired ? 'text-indigo-800' : 'text-gray-800'}`}>{cta.name}</span>
+                                {isRequired && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-indigo-200 text-indigo-700 text-xs font-semibold">🔒 Required</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{cta.description}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
                   {step2SpecificFields.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -613,11 +673,13 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Violation Status</label>
                       <select value={violationStatus} onChange={(e) => setViolationStatus(e.target.value)} className={ic}>
-                        <option value="open">Open</option>
-                        <option value="under_review">Under Review</option>
-                        <option value="actioned">Actioned</option>
-                        <option value="acquitted">Acquitted</option>
-                        <option value="closed">Closed</option>
+                        <option value="sanctioned">Sanctioned</option>
+                        <option value="disputed">Disputed</option>
+                        <option value="sanctioned_acknowledged">Acknowledged</option>
+                        <option value="appealed">Appealed</option>
+                        <option value="upheld">Upheld</option>
+                        <option value="dismissed">Dismissed</option>
+                        <option value="voided">Voided</option>
                       </select>
                     </div>
                     <div>
@@ -853,10 +915,13 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Statuses</option>
-              <option value="active">Active</option>
+              <option value="sanctioned">Sanctioned</option>
               <option value="disputed">Disputed</option>
-              <option value="enforced">Enforced</option>
-              <option value="exonerated">Exonerated</option>
+              <option value="sanctioned_acknowledged">Acknowledged</option>
+              <option value="appealed">Appealed</option>
+              <option value="upheld">Upheld</option>
+              <option value="dismissed">Dismissed</option>
+              <option value="voided">Voided</option>
             </select>
             
             <button
@@ -970,12 +1035,12 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                     >
                       View
                     </button>
-                    {!TERMINAL_STATUSES.includes(violation.status) && (
+                    {(violation.status === 'disputed' || violation.status === 'sanctioned_acknowledged' || violation.status === 'appealed') && (
                       <button
-                        className="px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg transition-colors"
+                        className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors"
                         onClick={(e) => { e.stopPropagation(); handleViolationClick(violation); }}
                       >
-                        Give Verdict
+                        Review
                       </button>
                     )}
                     {violation.zohoTicketId && (
@@ -1259,6 +1324,7 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
         violation={selectedViolation}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        mode="ops"
       />
         </>
       )}

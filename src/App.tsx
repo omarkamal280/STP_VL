@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   LayoutDashboard,
   Database,
   Tag,
   FileText,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Zap,
+  Bell,
+  X,
+  GitBranch,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ViolationData from './components/ViolationData';
 import ViolationTypes from './components/ViolationTypes';
 import ViolationLedger from './components/ViolationLedger';
 import TemplatesManagement from './components/TemplatesManagement';
+import CallToActions from './components/CallToActions';
 
 type TabItem = {
   id: string;
@@ -50,7 +55,27 @@ const tabItems: TabItem[] = [
     label: 'Templates',
     icon: MessageSquare,
     component: TemplatesManagement
-  }
+  },
+  {
+    id: 'call-to-actions',
+    label: 'Call to Actions',
+    icon: Zap,
+    component: CallToActions
+  },
+];
+
+// ── Changelog entries since last push ───────────────────────────────────────
+const CHANGELOG: { tag: string; tagColor: string; title: string; detail: string }[] = [
+  { tag: 'New Tab',    tagColor: 'bg-indigo-100 text-indigo-700', title: 'Call to Actions tab',           detail: '18 predefined CTAs (CTA-01 → CTA-18) with id, name, and description. Table shows which violation types require each CTA.' },
+  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'Violation Data — Required CTAs column', detail: 'Each violation row now shows its required CTAs as indigo pill badges (hover for description).' },
+  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'Violation Ledger wizard — CTA checklist', detail: 'Step 2 now includes a scrollable CTA checklist. Required CTAs for the selected violation code are auto-checked and locked. Analysts can add extra CTAs freely.' },
+  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'Violation types — requiredCtaIds',      detail: 'All 18 violation codes now carry 1–3 required CTA IDs that drive the auto-selection in the wizard.' },
+  { tag: 'New Type',  tagColor: 'bg-green-100 text-green-700',  title: 'CallToAction type',                    detail: 'Added CallToAction interface { id, name, description } to types.ts.' },
+  { tag: 'Lifecycle', tagColor: 'bg-orange-100 text-orange-700',title: 'Violation status model',               detail: 'New 7-state lifecycle: sanctioned → disputed / sanctioned_acknowledged → upheld / appealed / dismissed / voided.' },
+  { tag: 'Rewrite',   tagColor: 'bg-purple-100 text-purple-700',title: 'ViolationDetailModal',                 detail: 'Full rewrite supporting all 7 statuses. Ops actions: Uphold, Appeal, Dismiss, Void. Seller view: Acknowledge or Dispute. Dynamic communication thread.' },
+  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'ViolationLedger status filters',       detail: 'Status colour map, filter dropdown, and wizard status field updated to the new lifecycle states.' },
+  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'DisputesView & ViolationsList',        detail: 'Status icons, colours, filter options, and resolve actions aligned to the new Dispute.status union (pending / upheld / appealed / dismissed).' },
+  { tag: 'Data',      tagColor: 'bg-yellow-100 text-yellow-700',title: 'Mock data expanded to 22 violations',  detail: 'Covers all violation types, 8 sellers, and dates spread across the past 180 days for richer data.' },
 ];
 
 const CORRECT_PASSWORD = 'iknowomarkamal';
@@ -112,6 +137,18 @@ function App() {
   const [unlocked, setUnlocked] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [navigationState, setNavigationState] = useState<any>({});
+  const [showChangelog, setShowChangelog] = useState(false);
+  const changelogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (changelogRef.current && !changelogRef.current.contains(e.target as Node)) {
+        setShowChangelog(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const ActiveComponent = tabItems.find(item => item.id === activeTab)?.component || Dashboard;
 
@@ -131,13 +168,57 @@ function App() {
       {/* Header with Logo */}
       <header className="bg-white border-b border-gray-200">
         <div className="px-8 py-4">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">STP Violation Ledger</h1>
+                <p className="text-xs text-gray-500">Risk Management System</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">STP Violation Ledger</h1>
-              <p className="text-xs text-gray-500">Risk Management System</p>
+
+            {/* Changelog bell */}
+            <div className="relative" ref={changelogRef}>
+              <button
+                onClick={() => setShowChangelog(v => !v)}
+                className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-colors"
+                title="What's new"
+              >
+                <Bell className="w-5 h-5 text-gray-500" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600" />
+              </button>
+
+              {showChangelog && (
+                <div className="absolute right-0 top-12 w-[420px] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                  {/* Panel header */}
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <GitBranch className="w-4 h-4 text-gray-400" />
+                      <p className="text-sm font-semibold text-gray-900">What's new since last push</p>
+                    </div>
+                    <button onClick={() => setShowChangelog(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {/* Entries */}
+                  <div className="overflow-y-auto max-h-[480px] divide-y divide-gray-100">
+                    {CHANGELOG.map((entry, i) => (
+                      <div key={i} className="px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${entry.tagColor}`}>{entry.tag}</span>
+                          <p className="text-sm font-semibold text-gray-800">{entry.title}</p>
+                        </div>
+                        <p className="text-xs text-gray-500 leading-relaxed">{entry.detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+                    <p className="text-xs text-gray-400">Last push: <span className="font-medium text-gray-600">verdict in edits</span> · branch <span className="font-mono">main</span></p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

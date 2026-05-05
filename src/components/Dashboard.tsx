@@ -15,7 +15,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   // Calculate dashboard metrics
   const totalViolations = mockViolations.length;
-  const activeDisputes = mockDisputes.filter(d => d.status === 'pending' || d.status === 'under_review').length;
+  const activeDisputes = mockDisputes.filter(d => d.status === 'pending' || d.status === 'appealed').length;
   const pendingDisputes = mockDisputes.filter(d => d.status === 'pending').length;
   
   // Get violations from past 30 days
@@ -179,9 +179,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        violation.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                        violation.status === 'disputed' ? 'bg-purple-100 text-purple-800' :
-                        violation.status === 'enforced' ? 'bg-green-100 text-green-800' :
+                        violation.status === 'sanctioned' ? 'bg-orange-100 text-orange-800' :
+                        violation.status === 'disputed' ? 'bg-yellow-100 text-yellow-800' :
+                        violation.status === 'upheld' ? 'bg-red-100 text-red-800' :
+                        violation.status === 'dismissed' ? 'bg-green-100 text-green-800' :
+                        violation.status === 'appealed' ? 'bg-blue-100 text-blue-800' :
+                        violation.status === 'sanctioned_acknowledged' ? 'bg-purple-100 text-purple-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {violation.status}
@@ -238,8 +241,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 text-xs rounded-full ${
                           dispute.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          dispute.status === 'under_review' ? 'bg-blue-100 text-blue-800' :
-                          dispute.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                          dispute.status === 'appealed' ? 'bg-blue-100 text-blue-800' :
+                          dispute.status === 'dismissed' ? 'bg-green-100 text-green-800' :
+                          dispute.status === 'upheld' ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {dispute.status.replace('_', ' ')}
@@ -274,6 +278,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         violation={selectedViolation}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        mode="ops"
       />
     </div>
   );

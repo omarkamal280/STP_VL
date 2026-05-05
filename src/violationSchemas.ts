@@ -12,6 +12,7 @@ export interface ViolationCode {
   family: string;
   description: string;
   step2Fields: ViolationCodeField[];
+  requiredCtaIds: string[];
 }
 
 // const INVESTIGATION_STATUS_OPTS = [
@@ -76,24 +77,24 @@ const PLACEHOLDER_FIELDS: ViolationCodeField[] = [
 ];
 
 export const VIOLATION_CODES: ViolationCode[] = [
-  { code: 'IP_VIOLATION',       label: 'IP Violation',                   family: 'Intellectual Property', description: 'Seller is infringing intellectual property rights of a brand.',               step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'FALSE_BRAND_REP',    label: 'False Brand Representation',     family: 'Intellectual Property', description: 'Seller falsely represents a brand without authorisation.',                  step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'COUNTERFEIT_SALE',   label: 'Counterfeit Sale',               family: 'Intellectual Property', description: 'Seller is selling counterfeit products.',                                  step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'COUNTERFEIT_LISTING',label: 'Counterfeit Listing',            family: 'Intellectual Property', description: 'Seller has listed counterfeit products without a completed sale.',          step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'PROHIBITED_PRODUCT', label: 'Prohibited Product',             family: 'Compliance',            description: 'Seller is selling products that are prohibited on the platform.',          step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'PROHIBITED_LISTING', label: 'Prohibited Listing',             family: 'Compliance',            description: 'Seller has listed items that are restricted or not allowed.',              step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'FAKE_DOCUMENT',      label: 'Fake Document Submission',       family: 'Fraud',                 description: 'Seller submitted fraudulent documents during onboarding or compliance.',   step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'FRAUDULENT_DISPUTE', label: 'Fraudulent Dispute',             family: 'Fraud',                 description: 'Seller filed a dispute in bad faith or with falsified information.',       step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'MONEY_LAUNDERING',   label: 'Money Laundering',               family: 'Fraud',                 description: 'Seller account suspected of being used for financial crimes.',             step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'FAKE_FEEDBACK',      label: 'Fake Feedback / Reviews',        family: 'Fraud',                 description: 'Seller manipulates review or rating system with fake feedback.',           step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'OFFER_ABUSE',        label: 'Offer / Promotion Abuse',        family: 'Fraud',                 description: 'Seller abuses platform promotion or pricing mechanisms.',                  step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'MALICIOUS_ORDER',    label: 'Malicious Order Activity',       family: 'Fraud',                 description: 'Seller engages in malicious ordering patterns to harm competitors.',       step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'FALSE_LEGAL_ACTION', label: 'False Legal Action Threat',      family: 'Legal',                 description: 'Seller threatens or files false legal actions against the platform.',      step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'DUPLICATE_ACCOUNT',  label: 'Duplicate Account',              family: 'Account',               description: 'Seller operates multiple accounts in violation of platform policy.',       step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'ABUSIVE_COMM',       label: 'Abusive Communication',          family: 'Conduct',               description: 'Seller communicates in an abusive, threatening, or harassing manner.',    step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'ABUSIVE_CONDUCT',    label: 'Abusive Conduct',                family: 'Conduct',               description: 'Seller exhibits abusive behaviour towards customers or platform staff.',  step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'IMPROPER_RATING',    label: 'Improper Rating Manipulation',   family: 'Conduct',               description: 'Seller manipulates or disputes ratings in an improper way.',               step2Fields: PLACEHOLDER_FIELDS },
-  { code: 'DUPLICATE_LISTING',  label: 'Duplicate Listing',              family: 'Catalog',               description: 'Seller has created duplicate listings for the same product.',              step2Fields: PLACEHOLDER_FIELDS },
+  { code: 'IP_VIOLATION',       label: 'IP Violation',                   family: 'Intellectual Property', description: 'Seller is infringing intellectual property rights of a brand.',               step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02', 'CTA-03'] },
+  { code: 'FALSE_BRAND_REP',    label: 'False Brand Representation',     family: 'Intellectual Property', description: 'Seller falsely represents a brand without authorisation.',                  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02'] },
+  { code: 'COUNTERFEIT_SALE',   label: 'Counterfeit Sale',               family: 'Intellectual Property', description: 'Seller is selling counterfeit products.',                                  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02', 'CTA-09'] },
+  { code: 'COUNTERFEIT_LISTING',label: 'Counterfeit Listing',            family: 'Intellectual Property', description: 'Seller has listed counterfeit products without a completed sale.',          step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02'] },
+  { code: 'PROHIBITED_PRODUCT', label: 'Prohibited Product',             family: 'Compliance',            description: 'Seller is selling products that are prohibited on the platform.',          step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-06', 'CTA-07'] },
+  { code: 'PROHIBITED_LISTING', label: 'Prohibited Listing',             family: 'Compliance',            description: 'Seller has listed items that are restricted or not allowed.',              step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-06', 'CTA-07'] },
+  { code: 'FAKE_DOCUMENT',      label: 'Fake Document Submission',       family: 'Fraud',                 description: 'Seller submitted fraudulent documents during onboarding or compliance.',   step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-08', 'CTA-09'] },
+  { code: 'FRAUDULENT_DISPUTE', label: 'Fraudulent Dispute',             family: 'Fraud',                 description: 'Seller filed a dispute in bad faith or with falsified information.',       step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-09', 'CTA-15'] },
+  { code: 'MONEY_LAUNDERING',   label: 'Money Laundering',               family: 'Fraud',                 description: 'Seller account suspected of being used for financial crimes.',             step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-09', 'CTA-18'] },
+  { code: 'FAKE_FEEDBACK',      label: 'Fake Feedback / Reviews',        family: 'Fraud',                 description: 'Seller manipulates review or rating system with fake feedback.',           step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-12', 'CTA-13'] },
+  { code: 'OFFER_ABUSE',        label: 'Offer / Promotion Abuse',        family: 'Fraud',                 description: 'Seller abuses platform promotion or pricing mechanisms.',                  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-10', 'CTA-09'] },
+  { code: 'MALICIOUS_ORDER',    label: 'Malicious Order Activity',       family: 'Fraud',                 description: 'Seller engages in malicious ordering patterns to harm competitors.',       step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-09', 'CTA-18'] },
+  { code: 'FALSE_LEGAL_ACTION', label: 'False Legal Action Threat',      family: 'Legal',                 description: 'Seller threatens or files false legal actions against the platform.',      step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-18'] },
+  { code: 'DUPLICATE_ACCOUNT',  label: 'Duplicate Account',              family: 'Account',               description: 'Seller operates multiple accounts in violation of platform policy.',       step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-16', 'CTA-09'] },
+  { code: 'ABUSIVE_COMM',       label: 'Abusive Communication',          family: 'Conduct',               description: 'Seller communicates in an abusive, threatening, or harassing manner.',    step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-14', 'CTA-15'] },
+  { code: 'ABUSIVE_CONDUCT',    label: 'Abusive Conduct',                family: 'Conduct',               description: 'Seller exhibits abusive behaviour towards customers or platform staff.',  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-14', 'CTA-15', 'CTA-09'] },
+  { code: 'IMPROPER_RATING',    label: 'Improper Rating Manipulation',   family: 'Conduct',               description: 'Seller manipulates or disputes ratings in an improper way.',               step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-12', 'CTA-13'] },
+  { code: 'DUPLICATE_LISTING',  label: 'Duplicate Listing',              family: 'Catalog',               description: 'Seller has created duplicate listings for the same product.',              step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-17'] },
 ];
 
 export const COUNTRY_LABELS: Record<string, string> = {
