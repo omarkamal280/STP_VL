@@ -186,7 +186,6 @@ const WorkSection: React.FC<SectionProps> = ({
 const MyWork: React.FC = () => {
   const [selected, setSelected] = useState<Violation | null>(null);
   const [isOpen, setIsOpen]     = useState(false);
-  const [viewAll, setViewAll]   = useState(false);
 
   const open  = (v: Violation) => { setSelected(v); setIsOpen(true); };
   const close = () => { setIsOpen(false); setSelected(null); };
@@ -206,7 +205,7 @@ const MyWork: React.FC = () => {
 
   const mine180 = useMemo(() => all180.filter(v => v.assignedTo === ME), [all180]);
 
-  const source = viewAll ? all180 : mine180;
+  const source = mine180;
 
   const needsAction    = useMemo(() => source.filter(v => NEEDS_ACTION.includes(v.status)),    [source]);
   const awaitingSeller = useMemo(() => source.filter(v => AWAITING_SELLER.includes(v.status)), [source]);
@@ -233,21 +232,13 @@ const MyWork: React.FC = () => {
             <span className="text-xs text-gray-400 font-medium">· Past {WINDOW_DAYS} days</span>
           </div>
           <p className="text-sm text-gray-500 mt-0.5">
-            {viewAll
-              ? `All violations raised in the past ${WINDOW_DAYS} days across all analysts`
-              : `Violations assigned to you in the past ${WINDOW_DAYS} days`}
+            Violations assigned to you in the past {WINDOW_DAYS} days
           </p>
         </div>
-        <button
-          onClick={() => setViewAll(v => !v)}
-          className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          {viewAll ? 'Show My Work' : 'Show All Work'}
-        </button>
       </div>
 
-      {/* Stats bar — my work only */}
-      {!viewAll && (
+      {/* Stats bar */}
+      {(
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {([
             { label: 'Assigned to me',  value: stats.total,   Icon: FileText,       cls: 'text-gray-700',   bg: 'bg-gray-50   border-gray-200'  },
@@ -278,7 +269,7 @@ const MyWork: React.FC = () => {
         violations={needsAction}
         onOpen={open}
         defaultOpen={true}
-        showAssignee={viewAll}
+        showAssignee={false}
       />
 
       <WorkSection
@@ -291,7 +282,7 @@ const MyWork: React.FC = () => {
         violations={awaitingSeller}
         onOpen={open}
         defaultOpen={true}
-        showAssignee={viewAll}
+        showAssignee={false}
       />
 
       <WorkSection
@@ -304,7 +295,7 @@ const MyWork: React.FC = () => {
         violations={closed}
         onOpen={open}
         defaultOpen={false}
-        showAssignee={viewAll}
+        showAssignee={false}
       />
 
       {/* Modal */}
