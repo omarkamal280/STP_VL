@@ -33,6 +33,7 @@ export interface Violation {
   attachments?: string[];
   zohoTicketId?: string;
   poa?: POADocument;
+  assignedTo?: string;
 }
 
 export interface Dispute {

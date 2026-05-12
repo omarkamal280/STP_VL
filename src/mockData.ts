@@ -9,7 +9,7 @@ export const mockViolations: Violation[] = [
   // ─── V-001 · SANCTIONED ─────────────────────────────────────────────────────
   {
     id: 'V-001', sellerId: '442777', projectId: 'PRJ-2025-001',
-    type: 'IP Violation', severity: 'high',
+    type: 'IP Violation', severity: 'high', assignedTo: 'Sarah Johnson',
     description: 'Nike brand complaint — listings suspected of using Nike IP without authorisation.',
     messageToSeller: 'We have received a formal complaint from Nike. Please review the Plan of Action and respond within 5 business days.',
     createdAt: daysAgo(3), status: 'sanctioned',
@@ -24,7 +24,7 @@ export const mockViolations: Violation[] = [
   // ─── V-002 · DISPUTED ───────────────────────────────────────────────────────
   {
     id: 'V-002', sellerId: '442777', projectId: 'PRJ-2025-002',
-    type: 'Counterfeit Listing', severity: 'critical',
+    type: 'Counterfeit Listing', severity: 'critical', assignedTo: 'Sarah Johnson',
     description: 'Internal audit flagged potential counterfeit Adidas products.',
     messageToSeller: 'URGENT: Potential counterfeit Adidas products flagged. Respond within 24 hours.',
     createdAt: daysAgo(8), status: 'disputed',
@@ -34,7 +34,7 @@ export const mockViolations: Violation[] = [
   // ─── V-003 · SANCTIONED_ACKNOWLEDGED ───────────────────────────────────────
   {
     id: 'V-003', sellerId: '442777', projectId: 'PRJ-2025-003',
-    type: 'Delivery Policy Violation', severity: 'medium',
+    type: 'Delivery Policy Violation', severity: 'medium', assignedTo: 'Sarah Johnson',
     description: 'Multiple SLA breaches — 14 orders delivered 3–7 days beyond window.',
     messageToSeller: 'Repeated delivery SLA breaches recorded. Review Plan of Action and confirm corrective measures.',
     createdAt: daysAgo(15), status: 'sanctioned_acknowledged',
@@ -44,7 +44,7 @@ export const mockViolations: Violation[] = [
   // ─── V-004 · UPHELD ─────────────────────────────────────────────────────────
   {
     id: 'V-004', sellerId: '442777', projectId: 'PRJ-2025-004',
-    type: 'Pricing Manipulation', severity: 'high',
+    type: 'Pricing Manipulation', severity: 'high', assignedTo: 'Michael Chen',
     description: 'System detected artificial price inflation of 340% on 8 SKUs during high-demand window.',
     messageToSeller: 'Pricing anomalies detected violating fair pricing policy.',
     createdAt: daysAgo(22), status: 'upheld',
@@ -54,7 +54,7 @@ export const mockViolations: Violation[] = [
   // ─── V-005 · APPEALED ───────────────────────────────────────────────────────
   {
     id: 'V-005', sellerId: '442777', projectId: 'PRJ-2025-005',
-    type: 'Abusive Communication', severity: 'medium',
+    type: 'Abusive Communication', severity: 'medium', assignedTo: 'Michael Chen',
     description: 'Customer filed hostile communication complaint. Escalated for final review.',
     messageToSeller: 'Dispute escalated for second and final review.',
     createdAt: daysAgo(30), status: 'appealed',
@@ -64,7 +64,7 @@ export const mockViolations: Violation[] = [
   // ─── V-006 · DISMISSED ──────────────────────────────────────────────────────
   {
     id: 'V-006', sellerId: '442777', projectId: 'PRJ-2025-006',
-    type: 'Duplicate Listing', severity: 'low',
+    type: 'Duplicate Listing', severity: 'low', assignedTo: 'Emily Davis',
     description: 'Duplicate listings flagged — seller proved they were canonical variants.',
     messageToSeller: 'Dispute accepted — violation dismissed.',
     createdAt: daysAgo(45), status: 'dismissed',
@@ -74,7 +74,7 @@ export const mockViolations: Violation[] = [
   // ─── V-007 · VOIDED ─────────────────────────────────────────────────────────
   {
     id: 'V-007', sellerId: '442777', projectId: 'PRJ-2025-007',
-    type: 'Prohibited Product', severity: 'critical',
+    type: 'Prohibited Product', severity: 'critical', assignedTo: 'Emily Davis',
     description: 'Violation claim filed against wrong seller ID — data entry error.',
     messageToSeller: '',
     createdAt: daysAgo(60), status: 'voided',
@@ -86,7 +86,7 @@ export const mockViolations: Violation[] = [
 
   {
     id: 'V-008', sellerId: '492959', projectId: 'PRJ-2025-008',
-    type: 'IP Violation', severity: 'critical',
+    type: 'IP Violation', severity: 'critical', assignedTo: 'Sarah Johnson',
     description: 'Adidas counterfeit complaint filed by brand protection team.',
     messageToSeller: 'Critical IP violation. Respond within 24 hours.',
     createdAt: daysAgo(5), status: 'sanctioned',
@@ -95,7 +95,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-009', sellerId: '334890', projectId: 'PRJ-2025-009',
-    type: 'Counterfeit Listing', severity: 'critical',
+    type: 'Counterfeit Listing', severity: 'critical', assignedTo: 'Michael Chen',
     description: 'High-confidence counterfeit detection on luxury handbag listings.',
     messageToSeller: 'Counterfeit listings detected. Immediate response required.',
     createdAt: daysAgo(2), status: 'sanctioned',
@@ -104,7 +104,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-010', sellerId: '10555', projectId: 'PRJ-2025-010',
-    type: 'Delivery Policy Violation', severity: 'medium',
+    type: 'Delivery Policy Violation', severity: 'medium', assignedTo: 'Emily Davis',
     description: 'SLA breach reported on 9 orders across two weeks.',
     messageToSeller: 'SLA breaches recorded on your account.',
     createdAt: daysAgo(18), status: 'upheld',
@@ -113,7 +113,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-011', sellerId: '912567', projectId: 'PRJ-2025-011',
-    type: 'Fake Feedback / Reviews', severity: 'high',
+    type: 'Fake Feedback / Reviews', severity: 'high', assignedTo: 'Sarah Johnson',
     description: 'Coordinated review injection detected across 22 products.',
     messageToSeller: 'Review manipulation detected. Please respond.',
     createdAt: daysAgo(12), status: 'disputed',
@@ -122,7 +122,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-012', sellerId: '334890', projectId: 'PRJ-2025-012',
-    type: 'Prohibited Product', severity: 'critical',
+    type: 'Prohibited Product', severity: 'critical', assignedTo: 'Michael Chen',
     description: 'Listings contain prohibited items under customs and import regulations.',
     messageToSeller: 'Prohibited product listings detected.',
     createdAt: daysAgo(7), status: 'sanctioned',
@@ -131,7 +131,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-013', sellerId: '445678', projectId: 'PRJ-2025-013',
-    type: 'Pricing Manipulation', severity: 'high',
+    type: 'Pricing Manipulation', severity: 'high', assignedTo: 'Sarah Johnson',
     description: 'Price gouging detected during Ramadan demand spike.',
     messageToSeller: 'Price manipulation during peak period violates fair pricing policy.',
     createdAt: daysAgo(25), status: 'sanctioned_acknowledged',
@@ -140,7 +140,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-014', sellerId: '667123', projectId: 'PRJ-2025-014',
-    type: 'Abusive Communication', severity: 'low',
+    type: 'Abusive Communication', severity: 'low', assignedTo: 'Emily Davis',
     description: 'Seller support representative used inappropriate language with a customer.',
     messageToSeller: 'Communication policy breach on record.',
     createdAt: daysAgo(40), status: 'dismissed',
@@ -149,7 +149,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-015', sellerId: '492959', projectId: 'PRJ-2025-015',
-    type: 'IP Violation', severity: 'high',
+    type: 'IP Violation', severity: 'high', assignedTo: 'Michael Chen',
     description: 'Lacoste brand protection complaint for 12 unlicensed polo shirt listings.',
     messageToSeller: 'IP violation: Lacoste complaint filed.',
     createdAt: daysAgo(10), status: 'disputed',
@@ -158,7 +158,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-016', sellerId: '783421', projectId: 'PRJ-2025-016',
-    type: 'Duplicate Listing', severity: 'low',
+    type: 'Duplicate Listing', severity: 'low', assignedTo: 'Sarah Johnson',
     description: '8 duplicate ASIN listings detected.',
     messageToSeller: 'Duplicate listings detected on your account.',
     createdAt: daysAgo(55), status: 'dismissed',
@@ -167,7 +167,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-017', sellerId: '912567', projectId: 'PRJ-2025-017',
-    type: 'Counterfeit Listing', severity: 'high',
+    type: 'Counterfeit Listing', severity: 'high', assignedTo: 'Emily Davis',
     description: 'Suspected counterfeit watches flagged by authenticity scanner.',
     messageToSeller: 'Counterfeit watch listings detected.',
     createdAt: daysAgo(35), status: 'upheld',
@@ -176,7 +176,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-018', sellerId: '334890', projectId: 'PRJ-2025-018',
-    type: 'Fake Feedback / Reviews', severity: 'critical',
+    type: 'Fake Feedback / Reviews', severity: 'critical', assignedTo: 'Michael Chen',
     description: 'Bot-generated 5-star reviews across 45 products detected.',
     messageToSeller: 'Bot review injection detected.',
     createdAt: daysAgo(20), status: 'appealed',
@@ -185,7 +185,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-019', sellerId: '445678', projectId: 'PRJ-2025-019',
-    type: 'IP Violation', severity: 'medium',
+    type: 'IP Violation', severity: 'medium', assignedTo: 'Sarah Johnson',
     description: 'Unverified Apple accessory listings — possible trademark infringement.',
     messageToSeller: 'Apple IP complaint received. Please respond.',
     createdAt: daysAgo(50), status: 'sanctioned_acknowledged',
@@ -194,7 +194,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-020', sellerId: '10555', projectId: 'PRJ-2025-020',
-    type: 'Prohibited Product', severity: 'high',
+    type: 'Prohibited Product', severity: 'high', assignedTo: 'Emily Davis',
     description: 'Laser pointer listings exceed permitted output class.',
     messageToSeller: 'Prohibited laser products detected.',
     createdAt: daysAgo(70), status: 'voided',
@@ -203,7 +203,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-021', sellerId: '783421', projectId: 'PRJ-2025-021',
-    type: 'Delivery Policy Violation', severity: 'low',
+    type: 'Delivery Policy Violation', severity: 'low', assignedTo: 'Emily Davis',
     description: '3 orders breached SLA by 1 day during public holiday weekend.',
     messageToSeller: 'Minor SLA breach recorded.',
     createdAt: daysAgo(90), status: 'dismissed',
@@ -212,7 +212,7 @@ export const mockViolations: Violation[] = [
   },
   {
     id: 'V-022', sellerId: '667123', projectId: 'PRJ-2025-022',
-    type: 'Pricing Manipulation', severity: 'medium',
+    type: 'Pricing Manipulation', severity: 'medium', assignedTo: 'Michael Chen',
     description: 'Dynamic repricing algorithm caused repeated 200%+ price spikes.',
     messageToSeller: 'Automated repricing policy breach detected.',
     createdAt: daysAgo(14), status: 'disputed',

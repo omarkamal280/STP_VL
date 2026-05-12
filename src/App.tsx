@@ -1,22 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   LayoutDashboard,
-  Database,
-  Tag,
   FileText,
   AlertTriangle,
   MessageSquare,
-  Zap,
-  Bell,
+  List,
   X,
-  GitBranch,
+  Sparkles,
+  Briefcase,
+  ShoppingBag,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
-import ViolationData from './components/ViolationData';
-import ViolationTypes from './components/ViolationTypes';
 import ViolationLedger from './components/ViolationLedger';
 import TemplatesManagement from './components/TemplatesManagement';
-import CallToActions from './components/CallToActions';
+import SellerExperience from './components/SellerExperience';
+import MyWork from './components/MyWork';
+import MasterLists from './components/MasterLists';
 
 type TabItem = {
   id: string;
@@ -33,22 +32,22 @@ const tabItems: TabItem[] = [
     component: Dashboard
   },
   {
+    id: 'my-work',
+    label: 'My Work',
+    icon: Briefcase,
+    component: MyWork
+  },
+  {
     id: 'violation-ledger',
     label: 'Violation Ledger',
     icon: FileText,
     component: ViolationLedger
   },
   {
-    id: 'violation-data',
-    label: 'Violation Data',
-    icon: Database,
-    component: ViolationData
-  },
-  {
-    id: 'violation-types',
-    label: 'Violation Types',
-    icon: Tag,
-    component: ViolationTypes
+    id: 'master-lists',
+    label: 'Master Lists',
+    icon: List,
+    component: MasterLists
   },
   {
     id: 'templates',
@@ -56,26 +55,97 @@ const tabItems: TabItem[] = [
     icon: MessageSquare,
     component: TemplatesManagement
   },
-  {
-    id: 'call-to-actions',
-    label: 'Call to Actions',
-    icon: Zap,
-    component: CallToActions
-  },
 ];
 
-// ── Changelog entries since last push ───────────────────────────────────────
-const CHANGELOG: { tag: string; tagColor: string; title: string; detail: string }[] = [
-  { tag: 'New Tab',    tagColor: 'bg-indigo-100 text-indigo-700', title: 'Call to Actions tab',           detail: '18 predefined CTAs (CTA-01 → CTA-18) with id, name, and description. Table shows which violation types require each CTA.' },
-  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'Violation Data — Required CTAs column', detail: 'Each violation row now shows its required CTAs as indigo pill badges (hover for description).' },
-  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'Violation Ledger wizard — CTA checklist', detail: 'Step 2 now includes a scrollable CTA checklist. Required CTAs for the selected violation code are auto-checked and locked. Analysts can add extra CTAs freely.' },
-  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'Violation types — requiredCtaIds',      detail: 'All 18 violation codes now carry 1–3 required CTA IDs that drive the auto-selection in the wizard.' },
-  { tag: 'New Type',  tagColor: 'bg-green-100 text-green-700',  title: 'CallToAction type',                    detail: 'Added CallToAction interface { id, name, description } to types.ts.' },
-  { tag: 'Lifecycle', tagColor: 'bg-orange-100 text-orange-700',title: 'Violation status model',               detail: 'New 7-state lifecycle: sanctioned → disputed / sanctioned_acknowledged → upheld / appealed / dismissed / voided.' },
-  { tag: 'Rewrite',   tagColor: 'bg-purple-100 text-purple-700',title: 'ViolationDetailModal',                 detail: 'Full rewrite supporting all 7 statuses. Ops actions: Uphold, Appeal, Dismiss, Void. Seller view: Acknowledge or Dispute. Dynamic communication thread.' },
-  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'ViolationLedger status filters',       detail: 'Status colour map, filter dropdown, and wizard status field updated to the new lifecycle states.' },
-  { tag: 'Updated',   tagColor: 'bg-blue-100 text-blue-700',    title: 'DisputesView & ViolationsList',        detail: 'Status icons, colours, filter options, and resolve actions aligned to the new Dispute.status union (pending / upheld / appealed / dismissed).' },
-  { tag: 'Data',      tagColor: 'bg-yellow-100 text-yellow-700',title: 'Mock data expanded to 22 violations',  detail: 'Covers all violation types, 8 sellers, and dates spread across the past 180 days for richer data.' },
+// ── What's New entries for internal risk team ────────────────────────────────
+const CHANGELOG: { tag: string; tagColor: string; title: string; detail: string[] }[] = [
+  {
+    tag: 'Overview',
+    tagColor: 'bg-gray-100 text-gray-700',
+    title: 'STP Violation Ledger',
+    detail: [
+      'A centralised tool for the Risk Team to create, track, and action seller violations — from first sanction through seller response, dispute resolution, and final verdict.',
+      'Use "Seller View" (top right) to preview exactly what sellers see.',
+    ],
+  },
+  {
+    tag: 'Dashboard',
+    tagColor: 'bg-blue-100 text-blue-700',
+    title: 'Dashboard',
+    detail: [
+      'High-level overview of violation activity: total violations by status, recent activity feed, and key metrics at a glance.',
+      'Use this as your daily starting point to see what needs attention.',
+    ],
+  },
+  {
+    tag: 'My Work',
+    tagColor: 'bg-purple-100 text-purple-700',
+    title: 'My Work',
+    detail: [
+      'An analyst\'s personal queue — violations assigned to user and disputes awaiting their review.',
+      'Keeps your workload focused without needing to filter the full ledger.',
+    ],
+  },
+  {
+    tag: 'Violation Ledger',
+    tagColor: 'bg-orange-100 text-orange-700',
+    title: 'Violation Ledger',
+    detail: [
+      'The full record of all violations across all sellers.',
+      'Filter by type, status, seller, or date.',
+      'Click any row to open the detail modal where you can view the seller\'s response and take action (Uphold, Dismiss, Void).',
+    ],
+  },
+  {
+    tag: 'Violation Ledger',
+    tagColor: 'bg-orange-100 text-orange-700',
+    title: 'Violation creation wizard',
+    detail: [
+      'Click "+ New Violation" inside the Violation Ledger to open the 3-step wizard.',
+      'Step 1: partner details, violation code, date, and risk metadata.',
+      'Step 2: dynamic fields specific to the selected violation code, plus a CTA checklist.',
+      'Step 3: choose a message template and finalise the seller-facing message.',
+      'Important note is how we make user enter minimal data about the seller and we fetch the rest of the information for him.',
+    ],
+  },
+  {
+    tag: 'Master Lists',
+    tagColor: 'bg-teal-100 text-teal-700',
+    title: 'Master Lists',
+    detail: [
+      'Reference tables to deprecate ref master usage for violation types, codes, and their associated black point values and fines.',
+      'Hidden behind admin access.',
+    ],
+  },
+  {
+    tag: 'Templates',
+    tagColor: 'bg-indigo-100 text-indigo-700',
+    title: 'Templates',
+    detail: [
+      'Manage the message templates used in Step 3 of the violation wizard.',
+      'Each template maps to a violation. A violation can have multiple templates mapped to it.',
+      'Templates will include placeholders that get filled automatically with fields entered within the wizard.',
+    ],
+  },
+  {
+    tag: 'Bulk Uploads',
+    tagColor: 'bg-rose-100 text-rose-700',
+    title: 'Bulk Uploads',
+    detail: [
+      'Upload multiple violations at once via a structured CSV or Excel file.',
+      'Each row maps to a single violation — required fields match those in the creation wizard.',
+      'Uploaded violations are queued for review before being sanctioned, allowing analysts to catch errors before they reach sellers.',
+    ],
+  },
+  {
+    tag: 'Open question',
+    tagColor: 'bg-amber-100 text-amber-800',
+    title: 'Echo integration — how do we integrate with Echo on this?',
+    detail: [
+      'How will messages between the Risk Team and sellers be stored and synced — do they live in this system or are they pushed to / pulled from Echo?',
+      'How will we manage storing attachments submitted by sellers (evidence files, corrective action docs)? Are we storing them ourselves or delegating to Echo?',
+    ],
+  },
 ];
 
 const CORRECT_PASSWORD = 'iknowomarkamal';
@@ -138,17 +208,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [navigationState, setNavigationState] = useState<any>({});
   const [showChangelog, setShowChangelog] = useState(false);
-  const changelogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (changelogRef.current && !changelogRef.current.contains(e.target as Node)) {
-        setShowChangelog(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  const [sellerMode, setSellerMode] = useState(false);
 
   const ActiveComponent = tabItems.find(item => item.id === activeTab)?.component || Dashboard;
 
@@ -179,85 +239,100 @@ function App() {
               </div>
             </div>
 
-            {/* Changelog bell */}
-            <div className="relative" ref={changelogRef}>
-              <button
-                onClick={() => setShowChangelog(v => !v)}
-                className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-colors"
-                title="What's new"
-              >
-                <Bell className="w-5 h-5 text-gray-500" />
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600" />
-              </button>
+            <div className="flex items-center gap-3">
+            {/* Seller View toggle */}
+            <button
+              onClick={() => setSellerMode(v => !v)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+                sellerMode
+                  ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Seller View
+            </button>
 
-              {showChangelog && (
-                <div className="absolute right-0 top-12 w-[420px] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
-                  {/* Panel header */}
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <GitBranch className="w-4 h-4 text-gray-400" />
-                      <p className="text-sm font-semibold text-gray-900">What's new since last push</p>
-                    </div>
-                    <button onClick={() => setShowChangelog(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {/* Entries */}
-                  <div className="overflow-y-auto max-h-[480px] divide-y divide-gray-100">
-                    {CHANGELOG.map((entry, i) => (
-                      <div key={i} className="px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${entry.tagColor}`}>{entry.tag}</span>
-                          <p className="text-sm font-semibold text-gray-800">{entry.title}</p>
-                        </div>
-                        <p className="text-xs text-gray-500 leading-relaxed">{entry.detail}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
-                    <p className="text-xs text-gray-400">Last push: <span className="font-medium text-gray-600">verdict in edits</span> · branch <span className="font-mono">main</span></p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </header>
 
-      {/* Toolbar Tabs */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-8">
-          <nav className="flex space-x-8">
-            {tabItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 transition-colors ${
-                    isActive
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+      {/* Toolbar Tabs — hidden in seller mode */}
+      {!sellerMode && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="px-8 flex items-center justify-between">
+            <nav className="flex space-x-8">
+              {tabItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 transition-colors ${
+                      isActive
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* What's New */}
+            <button
+              onClick={() => setShowChangelog(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-yellow-300 text-yellow-900 hover:bg-yellow-400 transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> What's new
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* What's New modal */}
+      {showChangelog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowChangelog(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-500" />
+                <h2 className="text-base font-bold text-gray-900">Tool guide — STP Violation Ledger</h2>
+              </div>
+              <button onClick={() => setShowChangelog(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[85vh] divide-y divide-gray-100">
+              {CHANGELOG.map((entry, i) => (
+                <div key={i} className="px-6 py-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${entry.tagColor}`}>{entry.tag}</span>
+                    <p className="text-sm font-semibold text-gray-900">{entry.title}</p>
+                  </div>
+                  <div className="space-y-1.5 pl-1">
+                    {entry.detail.map((line, j) => (
+                      <p key={j} className="text-sm text-gray-500 leading-relaxed">{line}</p>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1">
         <div className="p-8">
-          <ActiveComponent 
-            onNavigate={handleNavigate}
-            navigationState={navigationState}
-          />
+          {sellerMode
+            ? <SellerExperience />
+            : <ActiveComponent onNavigate={handleNavigate} navigationState={navigationState} />
+          }
         </div>
       </main>
     </div>

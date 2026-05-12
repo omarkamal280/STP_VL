@@ -231,7 +231,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {recentDisputes.map((dispute) => {
-                  // Find the related violation
                   const relatedViolation = mockViolations.find(v => v.id === dispute.violationId);
                   return (
                     <tr key={dispute.id} className="hover:bg-gray-50">
@@ -272,7 +271,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      
       {/* Violation Detail Modal */}
       <ViolationDetailModal
         violation={selectedViolation}
