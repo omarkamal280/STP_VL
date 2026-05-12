@@ -9,6 +9,7 @@ import {
   Sparkles,
   Briefcase,
   ShoppingBag,
+  BookOpen,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ViolationLedger from './components/ViolationLedger';
@@ -209,6 +210,9 @@ function App() {
   const [navigationState, setNavigationState] = useState<any>({});
   const [showChangelog, setShowChangelog] = useState(false);
   const [sellerMode, setSellerMode] = useState(false);
+  const [showBrd, setShowBrd] = useState(false);
+
+  const handleUnlock = () => { setUnlocked(true); setShowBrd(true); };
 
   const ActiveComponent = tabItems.find(item => item.id === activeTab)?.component || Dashboard;
 
@@ -220,11 +224,68 @@ function App() {
   };
 
   if (!unlocked) {
-    return <PasswordGate onUnlock={() => setUnlocked(true)} />;
+    return <PasswordGate onUnlock={handleUnlock} />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* BRD overview modal */}
+      {showBrd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-600" />
+                <h2 className="text-base font-bold text-gray-900">What is this and why are we building it?</h2>
+              </div>
+              <button onClick={() => setShowBrd(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[80vh] px-6 py-5 space-y-5">
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-900">The internal tool</p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Right now, handling a violation means jumping between Zoho for communication and Ref Master for data — it's slow, manual, and easy to lose track of where things stand. This tool replaces that. Everything lives in one place: creating violations, tracking their status, and acting on seller responses.
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  We're introducing a more structured, deterministic state model for violations. Instead of free-form updates, each violation moves through defined states — which means less ambiguity, easier handoffs between analysts, and the ability to automate state changes over time.
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  We're also adding bulk uploads so analysts can process multiple violations at once instead of going one by one. The long-term target is to fully deprecate both Ref Master and Zoho for violation handling.
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  This new tool will live inside the trust profile product as its separate tool.
+                </p>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 space-y-2">
+                <p className="text-sm font-semibold text-gray-900">The seller experience</p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  On the seller side, the current view doesn't give sellers enough to work with. They see a violation but don't know exactly what went wrong, what it means for their account, or what they can do about it.
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  We're improving this with a more detailed violation view — better information granularity so sellers can understand the specific issue, and clear structured paths to either fix it or dispute it. No more open-ended responses.
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  This is also a foundation for the next step: a full account health and enforcement model built around violations, black points, and seller accountability.
+                </p>
+              </div>
+
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setShowBrd(false)}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header with Logo */}
       <header className="bg-white border-b border-gray-200">
         <div className="px-8 py-4">
@@ -240,6 +301,14 @@ function App() {
             </div>
 
             <div className="flex items-center gap-3">
+            {/* About button */}
+            <button
+              onClick={() => setShowBrd(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <BookOpen className="w-3.5 h-3.5" /> Business Requirement Document
+            </button>
+
             {/* Seller View toggle */}
             <button
               onClick={() => setSellerMode(v => !v)}
