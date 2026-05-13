@@ -14,12 +14,14 @@ const WINDOW_DAYS = 180;
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_PILL: Record<ViolationStatus, { label: string; cls: string }> = {
-  sanctioned:              { label: 'Sanctioned',   cls: 'bg-orange-100 text-orange-700' },
-  disputed:                { label: 'Disputed',     cls: 'bg-yellow-100 text-yellow-700' },
-  sanctioned_acknowledged: { label: 'Acknowledged', cls: 'bg-purple-100 text-purple-700' },
-  upheld:                  { label: 'Upheld',       cls: 'bg-red-100 text-red-700'       },
-  appealed:                { label: 'Appealed',     cls: 'bg-blue-100 text-blue-700'     },
-  dismissed:               { label: 'Dismissed',    cls: 'bg-green-100 text-green-700'   },
+  sanctioned:   { label: 'Sanctioned',   cls: 'bg-orange-100 text-orange-700' },
+  disputed:     { label: 'Disputed',     cls: 'bg-yellow-100 text-yellow-700' },
+  acknowledged: { label: 'Acknowledged', cls: 'bg-purple-100 text-purple-700' },
+  insufficient: { label: 'Insufficient', cls: 'bg-amber-100 text-amber-700'   },
+  closed:       { label: 'Closed',       cls: 'bg-slate-200 text-slate-700'   },
+  upheld:       { label: 'Upheld',       cls: 'bg-red-100 text-red-700'       },
+  appealed:     { label: 'Appealed',     cls: 'bg-blue-100 text-blue-700'     },
+  dismissed:    { label: 'Dismissed',    cls: 'bg-green-100 text-green-700'   },
   voided:                  { label: 'Voided',       cls: 'bg-gray-100 text-gray-500'     },
 };
 
@@ -31,9 +33,9 @@ const SEV_PILL: Record<string, string> = {
 };
 
 // Bucket definitions
-const NEEDS_ACTION: ViolationStatus[]  = ['disputed', 'sanctioned_acknowledged', 'appealed'];
-const AWAITING_SELLER: ViolationStatus[] = ['sanctioned'];
-const CLOSED: ViolationStatus[]        = ['upheld', 'dismissed', 'voided'];
+const NEEDS_ACTION: ViolationStatus[]    = ['disputed', 'acknowledged', 'appealed'];
+const AWAITING_SELLER: ViolationStatus[] = ['sanctioned', 'insufficient'];
+const CLOSED: ViolationStatus[]          = ['closed', 'upheld', 'dismissed', 'voided'];
 
 function daysOld(d: Date): string {
   const n = Math.floor((Date.now() - d.getTime()) / 86400000);
@@ -50,16 +52,6 @@ const ViolationRow: React.FC<RowProps> = ({ v, onOpen, showAssignee }) => {
   const dispute = mockDisputes.find(d => d.violationId === v.id);
   const ack     = mockAcknowledgments.find(a => a.violationId === v.id);
   const { label, cls } = STATUS_PILL[v.status];
-
-  const responseTag =
-    v.status === 'disputed'
-      ? { text: 'Seller Disputed',      cls: 'bg-yellow-100 text-yellow-700', Icon: MessageSquare }
-      : v.status === 'sanctioned_acknowledged'
-      ? { text: 'Seller Acknowledged',  cls: 'bg-purple-100 text-purple-700', Icon: CheckCircle   }
-      : v.status === 'appealed'
-      ? { text: 'Awaiting Final Decision', cls: 'bg-blue-100 text-blue-700',  Icon: Scale         }
-      : null;
-
   const isActionable = NEEDS_ACTION.includes(v.status);
 
   return (
@@ -77,13 +69,7 @@ const ViolationRow: React.FC<RowProps> = ({ v, onOpen, showAssignee }) => {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-semibold text-gray-800">{v.id}</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${SEV_PILL[v.severity]}`}>{v.severity}</span>
             <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${cls}`}>{label}</span>
-            {responseTag && (
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${responseTag.cls}`}>
-                <responseTag.Icon className="w-3 h-3" />{responseTag.text}
-              </span>
-            )}
           </div>
 
           <p className="text-xs text-gray-500 mt-0.5 truncate">

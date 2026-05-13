@@ -69,12 +69,14 @@ const ViolationsList: React.FC = () => {
 
   const getStatusColor = (status: Violation['status']) => {
     switch (status) {
-      case 'sanctioned':              return 'bg-orange-100 text-orange-800';
-      case 'disputed':                return 'bg-yellow-100 text-yellow-800';
-      case 'sanctioned_acknowledged': return 'bg-purple-100 text-purple-800';
-      case 'upheld':                  return 'bg-red-100 text-red-800';
-      case 'appealed':                return 'bg-blue-100 text-blue-800';
-      case 'dismissed':               return 'bg-green-100 text-green-800';
+      case 'sanctioned':   return 'bg-orange-100 text-orange-800';
+      case 'disputed':     return 'bg-yellow-100 text-yellow-800';
+      case 'acknowledged': return 'bg-purple-100 text-purple-800';
+      case 'insufficient': return 'bg-amber-100 text-amber-800';
+      case 'closed':       return 'bg-slate-200 text-slate-700';
+      case 'upheld':       return 'bg-red-100 text-red-800';
+      case 'appealed':     return 'bg-blue-100 text-blue-800';
+      case 'dismissed':    return 'bg-green-100 text-green-800';
       case 'voided':                  return 'bg-gray-100 text-gray-500';
     }
   };
@@ -112,7 +114,9 @@ const ViolationsList: React.FC = () => {
               <option value="all">All Statuses</option>
               <option value="sanctioned">Sanctioned</option>
               <option value="disputed">Disputed</option>
-              <option value="sanctioned_acknowledged">Acknowledged</option>
+              <option value="acknowledged">Acknowledged</option>
+              <option value="insufficient">Insufficient</option>
+              <option value="closed">Closed</option>
               <option value="appealed">Appealed</option>
               <option value="upheld">Upheld</option>
               <option value="dismissed">Dismissed</option>

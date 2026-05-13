@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AdminContext } from '../App';
 import {
   X, AlertTriangle, CheckCircle, XCircle, FileText, MessageSquare,
   ShieldAlert, User, Clock, BookOpen, Paperclip, ChevronDown, ChevronUp,
@@ -17,23 +18,27 @@ const SEV_PILL: Record<string, string> = {
 };
 
 const STATUS_PILL: Record<string, string> = {
-  sanctioned:              'bg-orange-100 text-orange-700',
-  disputed:                'bg-yellow-100 text-yellow-700',
-  sanctioned_acknowledged: 'bg-purple-100 text-purple-700',
-  upheld:                  'bg-red-100 text-red-700',
-  appealed:                'bg-blue-100 text-blue-700',
-  dismissed:               'bg-green-100 text-green-700',
-  voided:                  'bg-gray-100 text-gray-500',
+  sanctioned:   'bg-orange-100 text-orange-700',
+  disputed:     'bg-yellow-100 text-yellow-700',
+  acknowledged: 'bg-purple-100 text-purple-700',
+  insufficient: 'bg-amber-100 text-amber-700',
+  closed:       'bg-slate-200 text-slate-700',
+  upheld:       'bg-red-100 text-red-700',
+  appealed:     'bg-blue-100 text-blue-700',
+  dismissed:    'bg-green-100 text-green-700',
+  voided:       'bg-gray-100 text-gray-500',
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  sanctioned:              'Sanctioned',
-  disputed:                'Disputed',
-  sanctioned_acknowledged: 'Acknowledged',
-  upheld:                  'Upheld',
-  appealed:                'Appealed',
-  dismissed:               'Dismissed',
-  voided:                  'Voided',
+  sanctioned:   'Sanctioned',
+  disputed:     'Disputed',
+  acknowledged: 'Acknowledged',
+  insufficient: 'Insufficient',
+  closed:       'Closed',
+  upheld:       'Upheld',
+  appealed:     'Appealed',
+  dismissed:    'Dismissed',
+  voided:       'Voided',
 };
 
 interface ThreadMsg { id: string; from: 'ops' | 'seller' | 'system'; name: string; text: string; ts: Date; tag?: string; tagColor?: string; }
@@ -64,11 +69,14 @@ function buildThread(v: Violation, dispute: Dispute | null, ack: Acknowledgment 
     msgs.push({ id: 'm3', from: 'system', name: 'System', text: dispute.opsReply, ts: dispute.opsRepliedAt!, tag: 'Violation Dismissed — Seller Cleared', tagColor: 'bg-green-100 text-green-700' });
   }
 
-  if (ack && v.status === 'sanctioned_acknowledged') {
-    msgs.push({ id: 'm4', from: 'seller', name: `Seller ${v.sellerId}`, text: ack.poaFollowed, ts: ack.submittedAt, tag: 'Acknowledged — POA Followed' });
+  if (ack && (v.status === 'acknowledged' || v.status === 'insufficient' || v.status === 'closed')) {
+    msgs.push({ id: 'm4', from: 'seller', name: `Seller ${v.sellerId}`, text: ack.poaFollowed, ts: ack.submittedAt, tag: 'Acknowledged — Fix Submitted' });
   }
-  if (ack?.opsReply && v.status === 'sanctioned_acknowledged') {
-    msgs.push({ id: 'm5', from: 'system', name: 'System', text: ack.opsReply, ts: ack.opsRepliedAt!, tag: 'Acknowledgment Accepted' });
+  if (ack?.opsReply && v.status === 'closed') {
+    msgs.push({ id: 'm5', from: 'ops', name: 'Risk Team', text: ack.opsReply, ts: ack.opsRepliedAt!, tag: 'Fix Accepted — Closed', tagColor: 'bg-slate-200 text-slate-700' });
+  }
+  if (ack?.opsReply && v.status === 'insufficient') {
+    msgs.push({ id: 'm5', from: 'ops', name: 'Risk Team', text: ack.opsReply, ts: ack.opsRepliedAt!, tag: 'Insufficient — More Info Needed', tagColor: 'bg-amber-100 text-amber-700' });
   }
 
   if (v.status === 'voided') {
@@ -95,10 +103,11 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
   const [sellerDispText, setSellerDispText] = useState('');
   const [sellerFiles, setSellerFiles]       = useState<string[]>([]);
   const [sellerDone, setSellerDone]         = useState(false);
-  const [opsAction, setOpsAction]           = useState<'uphold' | 'appeal' | 'dismiss' | 'accept_ack' | 'void' | ''>('');
+  const [opsAction, setOpsAction]           = useState<'uphold' | 'appeal' | 'dismiss' | 'accept_fix' | 'insufficient' | 'void' | ''>('');
   const [opsReason, setOpsReason]           = useState('');
   const [opsDone, setOpsDone]               = useState(false);
   const [poaOpen, setPoaOpen]               = useState(true);
+  const isAdmin = useContext(AdminContext);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -175,12 +184,30 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         </div>
       </div>
     );
-    if (status === 'sanctioned_acknowledged') return (
+    if (status === 'acknowledged') return (
       <div className="flex items-center gap-3 p-4 rounded-xl bg-purple-50 border border-purple-200">
         <CheckCircle className="w-5 h-5 text-purple-500 flex-shrink-0" />
         <div>
-          <p className="text-sm font-bold text-purple-800">Acknowledgment under review</p>
-          <p className="text-xs text-purple-600 mt-0.5">Your acknowledgment has been received. The Risk Team will verify your corrective actions within 5 business days.</p>
+          <p className="text-sm font-bold text-purple-800">Fix submitted — under review</p>
+          <p className="text-xs text-purple-600 mt-0.5">Your corrective action evidence has been received. The Risk Team will verify it within 5 business days.</p>
+        </div>
+      </div>
+    );
+    if (status === 'insufficient') return (
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+        <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-amber-800">More information needed</p>
+          <p className="text-xs text-amber-700 mt-0.5">The Risk Team reviewed your fix evidence and flagged it as insufficient. See their message in the thread above and submit additional details.</p>
+        </div>
+      </div>
+    );
+    if (status === 'closed') return (
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-100 border border-slate-200">
+        <CheckCircle className="w-5 h-5 text-slate-500 flex-shrink-0" />
+        <div>
+          <p className="text-sm font-bold text-slate-700">Fix accepted — case closed</p>
+          <p className="text-xs text-slate-600 mt-0.5">The Risk Team accepted your corrective action. The violation still stands on record and black points apply, but no further enforcement is required.</p>
         </div>
       </div>
     );
@@ -238,200 +265,200 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
   };
 
   // ── Ops action panel ──────────────────────────────────────────────────────
+  // Every analyst action requires a message to the seller — no templates, no optional notes.
+  // Admin-only actions (Appeal from upheld, Void anywhere, decisions on Appealed) are gated by AdminContext.
   const renderOpsPanel = () => {
-    if (opsDone) {
-      const configs: Record<string, { bg: string; icon: React.ReactNode; label: string; sub: string }> = {
-        uphold:     { bg: 'bg-red-50 border-red-200',    icon: <XCircle className="w-5 h-5 text-red-500" />,    label: 'Violation upheld — seller is liable',           sub: 'All penalties apply. Seller has been notified.' },
-        appeal:     { bg: 'bg-blue-50 border-blue-200',  icon: <TrendingUp className="w-5 h-5 text-blue-500" />, label: 'Escalated for final review',                     sub: 'A senior risk analyst will make the final determination.' },
-        dismiss:    { bg: 'bg-green-50 border-green-200',icon: <CheckCircle className="w-5 h-5 text-green-500" />,label: 'Violation dismissed — seller cleared',           sub: 'No penalties apply. Record maintained to avoid double jeopardy.' },
-        accept_ack: { bg: 'bg-green-50 border-green-200',icon: <CheckCircle className="w-5 h-5 text-green-500" />,label: 'Acknowledgment accepted',                       sub: 'Seller has confirmed corrective action. Case noted.' },
-        void:       { bg: 'bg-gray-50 border-gray-200',  icon: <Ban className="w-5 h-5 text-gray-400" />,        label: 'Violation voided',                              sub: 'This record is no longer visible to the seller.' },
-      };
-      const c = configs[opsAction] ?? configs.dismiss;
+    type ActionMeta = {
+      key: 'uphold' | 'appeal' | 'dismiss' | 'accept_fix' | 'insufficient' | 'void';
+      label: string;
+      cls: string;
+      doneLabel: string;
+      doneSub: string;
+      icon: React.ReactNode;
+      doneBg: string;
+      promptLabel: string;
+      promptPlaceholder: string;
+      adminOnly?: boolean;
+    };
+
+    const ACTIONS: Record<ActionMeta['key'], ActionMeta> = {
+      uphold: {
+        key: 'uphold', label: '✕ Uphold', cls: 'bg-red-600 hover:bg-red-700',
+        doneLabel: 'Violation upheld — seller is liable', doneSub: 'All penalties apply. Your message has been sent to the seller.',
+        icon: <XCircle className="w-5 h-5 text-red-500" />, doneBg: 'bg-red-50 border-red-200',
+        promptLabel: 'Message to seller — explain why the violation is being upheld',
+        promptPlaceholder: 'Explain to the seller why their dispute is rejected and the violation stands…',
+      },
+      dismiss: {
+        key: 'dismiss', label: '✓ Dismiss', cls: 'bg-green-600 hover:bg-green-700',
+        doneLabel: 'Violation dismissed — seller cleared', doneSub: 'No penalties apply. Your message has been sent to the seller.',
+        icon: <CheckCircle className="w-5 h-5 text-green-500" />, doneBg: 'bg-green-50 border-green-200',
+        promptLabel: 'Message to seller — explain why the violation is being dismissed',
+        promptPlaceholder: 'Explain why the dispute was accepted on its merits and the violation is being dismissed…',
+      },
+      accept_fix: {
+        key: 'accept_fix', label: '✓ Accept Fix', cls: 'bg-slate-600 hover:bg-slate-700',
+        doneLabel: 'Fix accepted — case closed', doneSub: 'Violation still stands and black points apply. Your message has been sent to the seller.',
+        icon: <CheckCircle className="w-5 h-5 text-slate-500" />, doneBg: 'bg-slate-100 border-slate-200',
+        promptLabel: 'Message to seller — confirm the fix is accepted',
+        promptPlaceholder: 'Confirm the corrective action is sufficient and the case is now closed…',
+      },
+      insufficient: {
+        key: 'insufficient', label: '⚠ Insufficient', cls: 'bg-amber-500 hover:bg-amber-600',
+        doneLabel: 'Marked insufficient — seller must resubmit', doneSub: 'Your message has been sent to the seller asking for more information.',
+        icon: <AlertTriangle className="w-5 h-5 text-amber-500" />, doneBg: 'bg-amber-50 border-amber-200',
+        promptLabel: 'Message to seller — what specifically is missing?',
+        promptPlaceholder: 'Tell the seller exactly what information or evidence is missing so they can resubmit…',
+      },
+      appeal: {
+        key: 'appeal', label: '↑ Appeal', cls: 'bg-blue-600 hover:bg-blue-700',
+        doneLabel: 'Escalated for final review', doneSub: 'A senior risk admin will make the final determination.',
+        icon: <TrendingUp className="w-5 h-5 text-blue-500" />, doneBg: 'bg-blue-50 border-blue-200',
+        promptLabel: 'Message to seller — explain the escalation',
+        promptPlaceholder: 'Explain why this case is being escalated for a final review…',
+        adminOnly: true,
+      },
+      void: {
+        key: 'void', label: 'Void', cls: 'bg-gray-600 hover:bg-gray-700',
+        doneLabel: 'Violation voided', doneSub: 'This record is no longer visible to the seller. Record maintained for audit.',
+        icon: <Ban className="w-5 h-5 text-gray-400" />, doneBg: 'bg-gray-50 border-gray-200',
+        promptLabel: 'Reason for voiding (internal — not shown to seller)',
+        promptPlaceholder: 'Explain the process or claim error that requires this record to be voided…',
+        adminOnly: true,
+      },
+    };
+
+    // Available actions per status
+    const availableByStatus: Record<string, ActionMeta['key'][]> = {
+      sanctioned:   ['void'],                                     // admin-only Void; otherwise awaiting seller
+      disputed:     ['uphold', 'dismiss', 'void'],                // analyst decides; admin can Void
+      acknowledged: ['accept_fix', 'insufficient', 'void'],       // analyst reviews fix; admin can Void
+      insufficient: ['void'],                                     // awaiting seller resubmit; admin can Void
+      upheld:       ['appeal', 'void'],                           // admin only — appeal or void
+      appealed:     ['uphold', 'dismiss', 'void'],                // admin only — final decision
+      closed:       ['void'],                                     // terminal; admin can Void
+      dismissed:    ['void'],                                     // terminal; admin can Void
+      voided:       [],                                           // terminal
+    };
+
+    // Appealed-state actions are entirely admin-only (override the per-action adminOnly flag)
+    const stateIsAdminOnly = status === 'appealed' || status === 'upheld';
+
+    const allowedKeys = (availableByStatus[status] ?? []).filter(k => {
+      const a = ACTIONS[k];
+      if (stateIsAdminOnly) return isAdmin;
+      if (a.adminOnly) return isAdmin;
+      return true;
+    });
+
+    // Done state
+    if (opsDone && opsAction) {
+      const c = ACTIONS[opsAction as ActionMeta['key']];
       return (
-        <div className={`flex items-start gap-3 p-4 rounded-xl border ${c.bg}`}>
+        <div className={`flex items-start gap-3 p-4 rounded-xl border ${c.doneBg}`}>
           <div className="flex-shrink-0 mt-0.5">{c.icon}</div>
           <div>
-            <p className="text-sm font-bold text-gray-800">{c.label}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{c.sub}</p>
+            <p className="text-sm font-bold text-gray-800">{c.doneLabel}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{c.doneSub}</p>
           </div>
         </div>
       );
     }
 
-    if (status === 'dismissed') return (
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200">
-        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-        <div>
-          <p className="text-sm font-bold text-green-800">Dismissed — seller cleared</p>
-          <p className="text-xs text-green-600 mt-0.5">Dispute was accepted on its merits. No further action required.</p>
+    // Status-level summary banner
+    const banner = (() => {
+      if (status === 'sanctioned')   return { cls: 'bg-orange-50 border-orange-200 text-orange-700', icon: <Clock className="w-4 h-4 text-orange-500" />, text: 'Awaiting seller response.' };
+      if (status === 'insufficient') return { cls: 'bg-amber-50 border-amber-200 text-amber-700',    icon: <AlertTriangle className="w-4 h-4 text-amber-500" />, text: 'Waiting on the seller to resubmit additional information.' };
+      if (status === 'upheld')       return { cls: 'bg-red-50 border-red-200 text-red-700',          icon: <XCircle className="w-4 h-4 text-red-500" />, text: 'Upheld — seller is liable. Only an admin can move this to Appealed.' };
+      if (status === 'appealed')     return { cls: 'bg-blue-50 border-blue-200 text-blue-700',       icon: <Scale className="w-4 h-4 text-blue-500" />, text: 'Final review — admin decision only.' };
+      if (status === 'closed')       return { cls: 'bg-slate-100 border-slate-200 text-slate-700',   icon: <CheckCircle className="w-4 h-4 text-slate-500" />, text: 'Closed — fix accepted. Black points still apply.' };
+      if (status === 'dismissed')    return { cls: 'bg-green-50 border-green-200 text-green-700',    icon: <CheckCircle className="w-4 h-4 text-green-600" />, text: 'Dismissed — seller cleared.' };
+      if (status === 'voided')       return { cls: 'bg-gray-50 border-gray-200 text-gray-600',       icon: <Ban className="w-4 h-4 text-gray-400" />, text: 'Voided — hidden from seller. Record kept for audit.' };
+      return null;
+    })();
+
+    // No primary actions but might still allow Void via admin
+    if (allowedKeys.length === 0 && status === 'voided') {
+      return (
+        <div className={`flex items-center gap-3 p-4 rounded-xl border ${banner!.cls}`}>
+          {banner!.icon}
+          <p className="text-sm font-medium">{banner!.text}</p>
         </div>
-      </div>
-    );
-    if (status === 'voided') return (
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
-        <Ban className="w-5 h-5 text-gray-400 flex-shrink-0" />
-        <div>
-          <p className="text-sm font-bold text-gray-700">Voided by admin</p>
-          <p className="text-xs text-gray-500 mt-0.5">This violation is no longer visible to the seller. Record maintained for audit.</p>
-        </div>
-      </div>
-    );
-    if (status === 'sanctioned') return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-orange-50 border border-orange-200">
-          <Clock className="w-4 h-4 text-orange-500 flex-shrink-0" />
-          <p className="text-xs text-orange-700 font-medium">Awaiting seller response — no action required until seller responds.</p>
-        </div>
-        {!opsAction ? (
-          <button onClick={() => setOpsAction('void')} className="w-full py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all">
-            Void this violation (admin)
-          </button>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600">Reason for voiding <span className="text-red-500">*</span></p>
-            <textarea value={opsReason} onChange={e => setOpsReason(e.target.value)} rows={2} placeholder="Reason for voiding this violation…"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 resize-none" />
-            <div className="flex gap-2">
-              <button onClick={() => setOpsAction('')} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
-              <button onClick={() => { if (opsReason.trim()) setOpsDone(true); }} disabled={!opsReason.trim()}
-                className="flex-1 py-2 rounded-xl text-sm font-semibold bg-gray-600 hover:bg-gray-700 text-white transition-all disabled:opacity-40">Confirm Void</button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-    if (status === 'upheld') return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-200">
-          <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <p className="text-xs text-red-700 font-medium">Upheld — seller is liable. This violation cannot be re-disputed.</p>
-        </div>
-        {!opsAction ? (
-          <button onClick={() => setOpsAction('void')} className="w-full py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all">
-            Void this violation (admin)
-          </button>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600">Reason for voiding <span className="text-red-500">*</span></p>
-            <textarea value={opsReason} onChange={e => setOpsReason(e.target.value)} rows={2} placeholder="Reason for voiding this violation…"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 resize-none" />
-            <div className="flex gap-2">
-              <button onClick={() => setOpsAction('')} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
-              <button onClick={() => { if (opsReason.trim()) setOpsDone(true); }} disabled={!opsReason.trim()}
-                className="flex-1 py-2 rounded-xl text-sm font-semibold bg-gray-600 hover:bg-gray-700 text-white transition-all disabled:opacity-40">Confirm Void</button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-    if (status === 'disputed') return (
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Review Dispute</p>
-        {!opsAction ? (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <button onClick={() => setOpsAction('dismiss')} className="flex-1 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white transition-all">✓ Dismiss</button>
-              <button onClick={() => setOpsAction('appeal')}  className="flex-1 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all">↑ Appeal</button>
-              <button onClick={() => setOpsAction('uphold')}  className="flex-1 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition-all">✕ Uphold</button>
-            </div>
-            <button onClick={() => setOpsAction('void')} className="w-full py-1.5 rounded-xl text-xs font-medium border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all">
-              Void (admin)
+      );
+    }
+
+    // Action selected — show the message-to-seller form
+    if (opsAction) {
+      const c = ACTIONS[opsAction as ActionMeta['key']];
+      return (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-700">{c.label.replace(/^[^A-Za-z]+\s*/, '')} — confirm</p>
+          <label className="text-xs font-medium text-gray-600">{c.promptLabel} <span className="text-red-500">*</span></label>
+          <textarea
+            value={opsReason}
+            onChange={e => setOpsReason(e.target.value)}
+            rows={4}
+            placeholder={c.promptPlaceholder}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+          />
+          <div className="flex gap-2">
+            <button onClick={() => { setOpsAction(''); setOpsReason(''); }} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
+            <button
+              onClick={() => { if (opsReason.trim()) setOpsDone(true); }}
+              disabled={!opsReason.trim()}
+              className={`flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed ${c.cls}`}
+            >
+              Send & Confirm
             </button>
           </div>
-        ) : (
-          <div className="space-y-2">
-            <p className={`text-xs font-semibold ${opsAction === 'dismiss' ? 'text-green-700' : opsAction === 'appeal' ? 'text-blue-700' : opsAction === 'void' ? 'text-gray-600' : 'text-red-700'}`}>
-              {opsAction === 'dismiss' ? '✓ Dismissing — seller will be cleared'
-               : opsAction === 'appeal'  ? '↑ Escalating for final review'
-               : opsAction === 'void'    ? 'Voiding this violation'
-               : '✕ Upholding — seller remains liable'}
-            </p>
-            <label className="text-xs font-medium text-gray-600">Reason / notes <span className="text-red-500">*</span></label>
-            <textarea value={opsReason} onChange={e => setOpsReason(e.target.value)} rows={2}
-              placeholder="Add your reasoning…"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
-            <div className="flex gap-2">
-              <button onClick={() => setOpsAction('')} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
-              <button onClick={() => { if (opsReason.trim()) setOpsDone(true); }} disabled={!opsReason.trim()}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 ${
-                  opsAction === 'dismiss' ? 'bg-green-600 hover:bg-green-700' :
-                  opsAction === 'appeal'  ? 'bg-blue-600 hover:bg-blue-700'   :
-                  opsAction === 'void'    ? 'bg-gray-600 hover:bg-gray-700'   :
-                                            'bg-red-600 hover:bg-red-700'}`}>
-                Confirm
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-    if (status === 'appealed') return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-          <Scale className="w-4 h-4 text-blue-500 flex-shrink-0" />
-          <p className="text-xs text-blue-700 font-medium">Final review — admin decision only. This is the second and final investigation.</p>
         </div>
-        {!opsAction ? (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <button onClick={() => setOpsAction('dismiss')} className="flex-1 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white transition-all">✓ Dismiss (Final)</button>
-              <button onClick={() => setOpsAction('uphold')}  className="flex-1 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition-all">✕ Uphold (Final)</button>
-            </div>
-            <button onClick={() => setOpsAction('void')} className="w-full py-1.5 rounded-xl text-xs font-medium border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all">
-              Void (admin)
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <p className={`text-xs font-semibold ${opsAction === 'dismiss' ? 'text-green-700' : opsAction === 'void' ? 'text-gray-600' : 'text-red-700'}`}>
-              {opsAction === 'dismiss' ? '✓ Final dismissal — seller will be cleared'
-               : opsAction === 'void'  ? 'Voiding this violation'
-               : '✕ Final uphold — seller remains liable'}
-            </p>
-            <label className="text-xs font-medium text-gray-600">Final decision notes <span className="text-red-500">*</span></label>
-            <textarea value={opsReason} onChange={e => setOpsReason(e.target.value)} rows={2}
-              placeholder="Final reasoning for this decision…"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
-            <div className="flex gap-2">
-              <button onClick={() => setOpsAction('')} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
-              <button onClick={() => { if (opsReason.trim()) setOpsDone(true); }} disabled={!opsReason.trim()}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 ${opsAction === 'dismiss' ? 'bg-green-600 hover:bg-green-700' : opsAction === 'void' ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700'}`}>
-                Confirm Final Decision
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-    if (status === 'sanctioned_acknowledged') return (
+      );
+    }
+
+    // Action picker
+    return (
       <div className="space-y-3">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Review Acknowledgment</p>
-        {!opsAction ? (
-          <div className="space-y-2">
-            <button onClick={() => setOpsAction('accept_ack')} className="w-full py-2.5 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white transition-all">✓ Accept Acknowledgment</button>
-            <button onClick={() => setOpsAction('void')} className="w-full py-1.5 rounded-xl text-xs font-medium border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all">Void (admin)</button>
+        {banner && (
+          <div className={`flex items-center gap-3 p-3 rounded-xl border ${banner.cls}`}>
+            {banner.icon}
+            <p className="text-xs font-medium">{banner.text}</p>
           </div>
-        ) : (
+        )}
+        {stateIsAdminOnly && !isAdmin && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">
+            <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>This violation is in an admin-only state. Switch on Admin mode (top right) to take action.</span>
+          </div>
+        )}
+        {allowedKeys.length > 0 && (
           <div className="space-y-2">
-            <p className={`text-xs font-semibold ${opsAction === 'void' ? 'text-gray-600' : 'text-green-700'}`}>
-              {opsAction === 'void' ? 'Voiding this violation' : '✓ Accepting acknowledgment'}
-            </p>
-            <label className="text-xs font-medium text-gray-600">{opsAction === 'void' ? 'Reason for voiding' : 'Closure note'} <span className="text-gray-400">(optional)</span></label>
-            <textarea value={opsReason} onChange={e => setOpsReason(e.target.value)} rows={2} placeholder={opsAction === 'void' ? 'Reason for voiding…' : 'Any notes on acceptance…'}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
-            <div className="flex gap-2">
-              <button onClick={() => setOpsAction('')} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
-              <button onClick={() => setOpsDone(true)}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all ${opsAction === 'void' ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700'}`}>
-                Confirm
-              </button>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Take Action</p>
+            <div className="grid grid-cols-1 gap-2">
+              {allowedKeys.filter(k => k !== 'void').map(k => {
+                const a = ACTIONS[k];
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setOpsAction(k)}
+                    className={`w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${a.cls}`}
+                  >
+                    {a.label}
+                  </button>
+                );
+              })}
             </div>
+            {allowedKeys.includes('void') && (
+              <button
+                onClick={() => setOpsAction('void')}
+                className="w-full py-1.5 rounded-xl text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all"
+              >
+                Void (admin)
+              </button>
+            )}
           </div>
         )}
       </div>
     );
-    return null;
   };
 
   // ── JSX ───────────────────────────────────────────────────────────────────

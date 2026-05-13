@@ -57,12 +57,14 @@ const TYPE_CODE: Record<string, string> = {
 };
 
 const STATUS_PILL: Record<ViolationStatus, { label: string; cls: string; icon: 'star' | 'ban' }> = {
-  sanctioned:              { label: 'Sanctioned',    cls: 'bg-orange-100 text-orange-700', icon: 'star' },
-  disputed:                { label: 'Disputed',      cls: 'bg-yellow-100 text-yellow-700', icon: 'star' },
-  sanctioned_acknowledged: { label: 'Acknowledged',  cls: 'bg-purple-100 text-purple-700', icon: 'star' },
-  upheld:                  { label: 'Upheld',        cls: 'bg-red-100 text-red-700',       icon: 'star' },
-  appealed:                { label: 'Appealed',      cls: 'bg-amber-100 text-amber-700',   icon: 'star' },
-  dismissed:               { label: 'Dismissed',     cls: 'bg-green-100 text-green-700',   icon: 'star' },
+  sanctioned:   { label: 'Sanctioned',    cls: 'bg-orange-100 text-orange-700', icon: 'star' },
+  disputed:     { label: 'Disputed',      cls: 'bg-yellow-100 text-yellow-700', icon: 'star' },
+  acknowledged: { label: 'Acknowledged',  cls: 'bg-purple-100 text-purple-700', icon: 'star' },
+  insufficient: { label: 'Insufficient',  cls: 'bg-amber-100 text-amber-700',   icon: 'star' },
+  closed:       { label: 'Closed',        cls: 'bg-slate-200 text-slate-700',   icon: 'star' },
+  upheld:       { label: 'Upheld',        cls: 'bg-red-100 text-red-700',       icon: 'star' },
+  appealed:     { label: 'Appealed',      cls: 'bg-blue-100 text-blue-700',     icon: 'star' },
+  dismissed:    { label: 'Dismissed',     cls: 'bg-green-100 text-green-700',   icon: 'star' },
   voided:                  { label: 'Voided',        cls: 'bg-gray-100 text-gray-500',     icon: 'ban'  },
 };
 
@@ -79,7 +81,9 @@ function getFine(severity: string, status: ViolationStatus): number {
 }
 
 function getBlackPoints(severity: string, status: ViolationStatus): number {
-  if (['disputed', 'appealed', 'dismissed'].includes(status)) return 0;
+  // Black points apply once a violation is sanctioned and stay applied through the lifecycle.
+  // They are only removed if the violation is voided (process error) or dismissed (cleared on merits).
+  if (['voided', 'dismissed'].includes(status)) return 0;
   const base: Record<string, number> = { critical: -100, high: -80, medium: -20, low: -10 };
   return base[severity] ?? 0;
 }
@@ -350,7 +354,7 @@ const SellerExperience: React.FC = () => {
               </button>
               {statusOpen && (
                 <div className="absolute top-full mt-1 left-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-44">
-                  {(['', 'sanctioned', 'disputed', 'sanctioned_acknowledged', 'upheld', 'appealed', 'dismissed'] as const).map(s => (
+                  {(['', 'sanctioned', 'disputed', 'acknowledged', 'insufficient', 'closed', 'upheld', 'appealed', 'dismissed'] as const).map(s => (
                     <button key={s} onClick={() => handleStatusSelect(s)}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between gap-3"
                     >

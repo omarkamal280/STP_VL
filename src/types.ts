@@ -1,17 +1,22 @@
 // Violation lifecycle (matches state diagram):
-//   sanctioned → seller responds → sanctioned_acknowledged | disputed
-//   disputed → ops reviews → upheld | appealed | dismissed
-//   appealed → ops final review → upheld (terminal) | dismissed (terminal)
+//   sanctioned → seller responds → acknowledged | disputed
+//   disputed → analyst reviews → upheld | dismissed
+//   acknowledged → analyst reviews fix → closed | insufficient
+//   insufficient → seller resubmits → acknowledged
+//   upheld → admin only → appealed
+//   appealed → admin final review → upheld | dismissed
 //   any state → voided (admin only, hidden from seller)
 
 export type ViolationStatus =
-  | 'sanctioned'              // raised by ops; seller liable, penalties apply; awaiting seller response
-  | 'disputed'                // seller submitted a dispute; internal team investigating
-  | 'sanctioned_acknowledged' // seller acknowledged + confirmed POA fix; ops reviewing
-  | 'upheld'                  // ops upheld violation; seller liable, cannot be re-disputed
-  | 'appealed'                // ops escalated for second & final review; admin only
-  | 'dismissed'               // dispute accepted on merits; seller cleared, no penalty (terminal)
-  | 'voided';                 // admin voided due to process/claim errors; hidden from seller (terminal)
+  | 'sanctioned'    // raised by ops; seller liable, penalties apply; awaiting seller response
+  | 'disputed'      // seller submitted a dispute; internal team investigating
+  | 'acknowledged'  // seller accepted and is providing fix evidence; analyst reviewing
+  | 'insufficient'  // analyst flagged the seller's fix evidence as missing info; seller must resubmit
+  | 'closed'        // analyst accepted the fix; violation stands and points apply, no further enforcement
+  | 'upheld'        // analyst upheld disputed violation; seller liable, only admins can move to appealed
+  | 'appealed'      // admin escalated for second & final review; admin only
+  | 'dismissed'     // dispute accepted on merits; seller cleared, no penalty (terminal)
+  | 'voided';       // admin voided due to process/claim errors; hidden from seller (terminal)
 
 export interface POADocument {
   title: string;

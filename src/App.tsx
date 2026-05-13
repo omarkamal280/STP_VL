@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, createContext } from 'react';
 import { 
   LayoutDashboard,
   FileText,
@@ -10,6 +10,7 @@ import {
   Briefcase,
   ShoppingBag,
   BookOpen,
+  Shield,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ViolationLedger from './components/ViolationLedger';
@@ -17,6 +18,9 @@ import TemplatesManagement from './components/TemplatesManagement';
 import SellerExperience from './components/SellerExperience';
 import MyWork from './components/MyWork';
 import MasterLists from './components/MasterLists';
+
+// Admin role context — admin-only actions (Appeal, Void, decisions on Appealed) are gated by this flag
+export const AdminContext = createContext<boolean>(false);
 
 type TabItem = {
   id: string;
@@ -139,6 +143,18 @@ const CHANGELOG: { tag: string; tagColor: string; title: string; detail: string[
     ],
   },
   {
+    tag: 'Admin Role',
+    tagColor: 'bg-purple-100 text-purple-700',
+    title: 'Admin role — gated actions for senior risk users',
+    detail: [
+      'Toggle the Admin On/Off pill in the top-right header to switch between analyst and admin views. The flag is for prototyping only — in production this will be driven by the user\'s role.',
+      'Admins are the only ones who can Void a violation from any state. Voiding hides the record from the seller and removes black points (used for process or claim errors).',
+      'Admins are the only ones who can Appeal an upheld violation, escalating it for a second and final review.',
+      'Once a violation is in the Appealed state, only admins can take the final Uphold or Dismiss decision. Analysts in this state see a notice prompting them to switch on Admin mode.',
+      'All other actions (Uphold, Dismiss, Accept Fix, Mark Insufficient) remain available to regular analysts.',
+    ],
+  },
+  {
     tag: 'Open question',
     tagColor: 'bg-amber-100 text-amber-800',
     title: 'Echo integration — how do we integrate with Echo on this?',
@@ -211,6 +227,7 @@ function App() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [sellerMode, setSellerMode] = useState(false);
   const [showBrd, setShowBrd] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const handleUnlock = () => { setUnlocked(true); setShowBrd(true); };
 
@@ -228,6 +245,7 @@ function App() {
   }
 
   return (
+    <AdminContext.Provider value={isAdmin}>
     <div className="min-h-screen bg-gray-50">
       {/* BRD overview modal */}
       {showBrd && (
@@ -307,6 +325,19 @@ function App() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
             >
               <BookOpen className="w-3.5 h-3.5" /> Business Requirement Document
+            </button>
+
+            {/* Admin role toggle */}
+            <button
+              onClick={() => setIsAdmin(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                isAdmin
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+              title="Toggle admin role — unlocks admin-only actions on violations (Appeal, Void, final decisions)"
+            >
+              <Shield className="w-3.5 h-3.5" /> Admin {isAdmin ? 'On' : 'Off'}
             </button>
 
             {/* Seller View toggle */}
@@ -405,6 +436,7 @@ function App() {
         </div>
       </main>
     </div>
+    </AdminContext.Provider>
   );
 }
 

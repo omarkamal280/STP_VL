@@ -31,13 +31,13 @@ export const mockViolations: Violation[] = [
     evidence: ['audit_report_adidas.pdf', 'photo_comparison.jpg'], zohoTicketId: 'ZT-1002',
     poa: { title: 'Counterfeit Product — Plan of Action', summary: 'Flagged listings must be removed and authenticity proven.', steps: ['Remove all flagged Adidas listings.', 'Submit certificates of authenticity.', 'Provide purchasing invoices.'] },
   },
-  // ─── V-003 · SANCTIONED_ACKNOWLEDGED ───────────────────────────────────────
+  // ─── V-003 · ACKNOWLEDGED (seller submitted fix, analyst reviewing) ───────────
   {
     id: 'V-003', sellerId: '442777', projectId: 'PRJ-2025-003',
     type: 'Delivery Policy Violation', severity: 'medium', assignedTo: 'Sarah Johnson',
     description: 'Multiple SLA breaches — 14 orders delivered 3–7 days beyond window.',
     messageToSeller: 'Repeated delivery SLA breaches recorded. Review Plan of Action and confirm corrective measures.',
-    createdAt: daysAgo(15), status: 'sanctioned_acknowledged',
+    createdAt: daysAgo(15), status: 'acknowledged',
     evidence: ['sla_breach_report.pdf'], zohoTicketId: 'ZT-1003',
     poa: { title: 'Delivery SLA Breach — Plan of Action', summary: 'Outline corrective steps for repeated SLA violations.', steps: ['Audit fulfilment workflow.', 'Update delivery times.', 'Submit revised logistics plan.'] },
   },
@@ -134,7 +134,7 @@ export const mockViolations: Violation[] = [
     type: 'Pricing Manipulation', severity: 'high', assignedTo: 'Sarah Johnson',
     description: 'Price gouging detected during Ramadan demand spike.',
     messageToSeller: 'Price manipulation during peak period violates fair pricing policy.',
-    createdAt: daysAgo(25), status: 'sanctioned_acknowledged',
+    createdAt: daysAgo(25), status: 'insufficient',
     evidence: ['pricing_audit_ramadan.pdf'], zohoTicketId: 'ZT-1013',
     poa: { title: 'Pricing — Plan of Action', summary: 'Correct pricing to comply with policy.', steps: ['Revert flagged prices.', 'Commit to fair pricing.'] },
   },
@@ -188,7 +188,7 @@ export const mockViolations: Violation[] = [
     type: 'IP Violation', severity: 'medium', assignedTo: 'Sarah Johnson',
     description: 'Unverified Apple accessory listings — possible trademark infringement.',
     messageToSeller: 'Apple IP complaint received. Please respond.',
-    createdAt: daysAgo(50), status: 'sanctioned_acknowledged',
+    createdAt: daysAgo(50), status: 'closed',
     evidence: ['apple_complaint.pdf'], zohoTicketId: 'ZT-1019',
     poa: { title: 'IP — Plan of Action', summary: 'Provide Apple authorisation or remove listings.', steps: ['Remove listings or provide authorisation.'] },
   },
@@ -278,7 +278,7 @@ export const mockDisputes: Dispute[] = [
 // ── Acknowledgments ──────────────────────────────────────────────────────────
 
 export const mockAcknowledgments: Acknowledgment[] = [
-  // A-001 → V-003 (sanctioned_acknowledged · pending ops review)
+  // A-001 → V-003 (acknowledged · pending analyst review)
   {
     id: 'A-001',
     violationId: 'V-003',

@@ -375,14 +375,23 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     }
   };
 
+  // Black points apply once a violation is sanctioned and stay applied unless voided or dismissed.
+  const getBlackPoints = (severity: Violation['severity'], status: Violation['status']): number => {
+    if (status === 'voided' || status === 'dismissed') return 0;
+    const base: Record<Violation['severity'], number> = { critical: -100, high: -80, medium: -20, low: -10 };
+    return base[severity] ?? 0;
+  };
+
   const getStatusColor = (status: Violation['status']) => {
     switch (status) {
-      case 'sanctioned':              return 'bg-orange-100 text-orange-700';
-      case 'disputed':                return 'bg-yellow-100 text-yellow-700';
-      case 'sanctioned_acknowledged': return 'bg-purple-100 text-purple-700';
-      case 'upheld':                  return 'bg-red-100 text-red-700';
-      case 'appealed':                return 'bg-blue-100 text-blue-700';
-      case 'dismissed':               return 'bg-green-100 text-green-700';
+      case 'sanctioned':   return 'bg-orange-100 text-orange-700';
+      case 'disputed':     return 'bg-yellow-100 text-yellow-700';
+      case 'acknowledged': return 'bg-purple-100 text-purple-700';
+      case 'insufficient': return 'bg-amber-100 text-amber-700';
+      case 'closed':       return 'bg-slate-200 text-slate-700';
+      case 'upheld':       return 'bg-red-100 text-red-700';
+      case 'appealed':     return 'bg-blue-100 text-blue-700';
+      case 'dismissed':    return 'bg-green-100 text-green-700';
       case 'voided':                  return 'bg-gray-100 text-gray-500';
       default:                        return 'bg-gray-100 text-gray-600';
     }
@@ -675,7 +684,9 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                       <select value={violationStatus} onChange={(e) => setViolationStatus(e.target.value)} className={ic}>
                         <option value="sanctioned">Sanctioned</option>
                         <option value="disputed">Disputed</option>
-                        <option value="sanctioned_acknowledged">Acknowledged</option>
+                        <option value="acknowledged">Acknowledged</option>
+                        <option value="insufficient">Insufficient</option>
+                        <option value="closed">Closed</option>
                         <option value="appealed">Appealed</option>
                         <option value="upheld">Upheld</option>
                         <option value="dismissed">Dismissed</option>
@@ -917,7 +928,9 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
               <option value="all">All Statuses</option>
               <option value="sanctioned">Sanctioned</option>
               <option value="disputed">Disputed</option>
-              <option value="sanctioned_acknowledged">Acknowledged</option>
+              <option value="acknowledged">Acknowledged</option>
+              <option value="insufficient">Insufficient</option>
+              <option value="closed">Closed</option>
               <option value="appealed">Appealed</option>
               <option value="upheld">Upheld</option>
               <option value="dismissed">Dismissed</option>
@@ -973,10 +986,13 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                 Type
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Severity
+                Black Points
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Assigned To
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
@@ -1015,14 +1031,22 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                   <span className="text-sm text-gray-900">{violation.type}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${getSeverityColor(violation.severity)}`}>
-                    {violation.severity.toUpperCase()}
-                  </span>
+                  {(() => {
+                    const bp = getBlackPoints(violation.severity, violation.status);
+                    return (
+                      <span className={`text-sm font-semibold ${bp === 0 ? 'text-gray-400' : 'text-red-600'}`}>
+                        {bp === 0 ? '0' : bp}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(violation.status)}`}>
                     {violation.status.replace('_', ' ').toUpperCase()}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {violation.assignedTo ?? <span className="text-gray-400 italic">Unassigned</span>}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {violation.createdAt.toLocaleDateString()}
@@ -1035,14 +1059,6 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
                     >
                       View
                     </button>
-                    {(violation.status === 'disputed' || violation.status === 'sanctioned_acknowledged' || violation.status === 'appealed') && (
-                      <button
-                        className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors"
-                        onClick={(e) => { e.stopPropagation(); handleViolationClick(violation); }}
-                      >
-                        Review
-                      </button>
-                    )}
                     {violation.zohoTicketId && (
                       <button 
                         className="text-green-600 hover:text-green-900 text-xs"
