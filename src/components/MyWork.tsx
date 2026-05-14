@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   AlertTriangle, Clock, CheckCircle, FileText, Eye,
-  MessageSquare, ShieldAlert, ChevronDown, ChevronUp,
-  User, Scale,
+  ShieldAlert, ChevronDown, ChevronUp,
+  User,
 } from 'lucide-react';
 import { mockViolations, mockDisputes, mockAcknowledgments, mockSellers } from '../mockData';
 import { Violation, ViolationStatus } from '../types';
@@ -23,13 +23,6 @@ const STATUS_PILL: Record<ViolationStatus, { label: string; cls: string }> = {
   appealed:     { label: 'Appealed',     cls: 'bg-blue-100 text-blue-700'     },
   dismissed:    { label: 'Dismissed',    cls: 'bg-green-100 text-green-700'   },
   voided:                  { label: 'Voided',       cls: 'bg-gray-100 text-gray-500'     },
-};
-
-const SEV_PILL: Record<string, string> = {
-  critical: 'bg-red-100 text-red-700',
-  high:     'bg-orange-100 text-orange-700',
-  medium:   'bg-yellow-100 text-yellow-700',
-  low:      'bg-green-100 text-green-700',
 };
 
 // Bucket definitions
