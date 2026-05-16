@@ -120,9 +120,6 @@ const SellerViolationModal: React.FC<Props> = ({ violation, onClose }) => {
   const statusCls   = STATUS_PILL_CLS[violation.status] ?? 'bg-gray-100 text-gray-500';
   const issuedDate  = violation.createdAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  const deadline  = new Date(violation.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const daysLeft  = Math.ceil((deadline.getTime() - Date.now()) / 86400000);
-
   const statusChangedAt = new Date(violation.createdAt.getTime() + 2 * 60 * 1000);
   const timelineEvents  = [
     { label: 'Ticket Created',              time: violation.createdAt, bold: false },
@@ -170,7 +167,7 @@ const SellerViolationModal: React.FC<Props> = ({ violation, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] min-h-[560px] flex flex-col overflow-hidden">
 
         {/* ── Modal header ─────────────────────────────────────────────────── */}
         <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-gray-100">
@@ -209,7 +206,7 @@ const SellerViolationModal: React.FC<Props> = ({ violation, onClose }) => {
             <div className="flex flex-1 min-h-0 overflow-hidden">
 
               {/* Left panel */}
-              <div className="flex-1 min-w-0 overflow-y-auto px-6 py-5 space-y-6 border-r border-gray-100">
+              <div className="w-1/2 flex-shrink-0 overflow-y-auto px-6 py-5 space-y-6 border-r border-gray-100">
 
                 {/* Activity Timeline */}
                 <div>
@@ -294,86 +291,80 @@ const SellerViolationModal: React.FC<Props> = ({ violation, onClose }) => {
                 </div>
               </div>
 
-              {/* Right panel — noon message */}
-              <div className="w-64 flex-shrink-0 flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-4">
+              {/* Right panel — chat thread */}
+              <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 border-l border-gray-100">
+                {/* Message thread */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                   {violation.messageToSeller ? (
-                    <div className="bg-blue-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed space-y-3">
-                      <p>{violation.messageToSeller}</p>
-                      {violation.poa && (
-                        <>
-                          <div className="border-t border-blue-100 pt-3 space-y-2">
-                            <p className="font-semibold text-gray-800 text-xs uppercase tracking-wide">Plan of Action</p>
-                            <p className="text-xs text-gray-600">{violation.poa.summary}</p>
-                            <ul className="space-y-1.5 pl-3">
+                    <>
+                      {/* noon team message bubble */}
+                      <div className="bg-blue-50 rounded-2xl rounded-tl-sm px-4 py-3.5 text-sm text-gray-700 leading-relaxed space-y-2.5">
+                        <p>{violation.messageToSeller}</p>
+                        
+                        <p className="text-xs text-gray-500 border-t border-blue-100 pt-2">
+                          Shukran,<br />Team noon
+                        </p>
+                      </div>
+                      {/* Timestamp + status badge */}
+                      <div className="flex items-center gap-1.5 flex-wrap px-1">
+                        <span className="text-xs text-gray-400">
+                          {violation.createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}{' '}
+                          {violation.createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${statusCls}`}>{statusLabel}</span>
+                      </div>
+
+                      {/* Fixes needed card — sanctioned only */}
+                      {canAct && violation.poa && (
+                        <div className="bg-red-50 border border-red-100 rounded-xl px-3.5 py-3 flex items-start gap-2.5">
+                          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-semibold text-red-700 mb-1">Fixes needed:</p>
+                            <ul className="space-y-0.5 pl-1">
                               {violation.poa.steps.map((step, i) => (
-                                <li key={i} className="list-disc text-xs text-gray-600">{step}</li>
+                                <li key={i} className="text-xs text-red-600 flex items-start gap-1">
+                                  <span className="mt-1 w-1 h-1 rounded-full bg-red-500 flex-shrink-0" />
+                                  {step}
+                                </li>
                               ))}
                             </ul>
                           </div>
-                          <p className="text-xs text-gray-400 border-t border-blue-100 pt-2">
-                            For more information, refer to our Seller Policy pages on the noon Partners portal.
-                          </p>
-                        </>
-                      )}
-                      <div className="border-t border-blue-100 pt-2">
-                        <p className="text-xs text-gray-500">Shukran,<br />Team noon</p>
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          <p className="text-xs text-gray-400">
-                            {violation.createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}{' '}
-                            {violation.createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${statusCls}`}>{statusLabel}</span>
                         </div>
-                      </div>
-                    </div>
+                      )}
+                    </>
                   ) : (
                     <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-400 italic">
                       No message from noon team.
                     </div>
                   )}
-                </div>
 
-                {/* Non-actionable status bar (inside right panel) */}
-                {!canAct && NON_ACTION_MSG[violation.status] && (
-                  <div className="flex-shrink-0 p-3 border-t border-gray-100">
+                  {/* Non-actionable status message */}
+                  {!canAct && NON_ACTION_MSG[violation.status] && (
                     <div className={`rounded-xl p-3 text-xs leading-relaxed ${NON_ACTION_MSG[violation.status].cls}`}>
                       {NON_ACTION_MSG[violation.status].text}
                     </div>
+                  )}
+                </div>
+
+                {/* Action buttons pinned to bottom of right panel */}
+                {canAct && (
+                  <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 flex items-center gap-2 bg-white">
+                    <button
+                      onClick={() => setView('dispute')}
+                      className="flex-1 py-2.5 border border-gray-300 text-sm font-semibold text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                      Dispute
+                    </button>
+                    <button
+                      onClick={initAccept}
+                      className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+                    >
+                      Accept And Fix
+                    </button>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Footer action bar — sanctioned only */}
-            {canAct && (
-              <div className="flex-shrink-0 border-t border-red-100 bg-red-50 px-6 py-3 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 min-w-0">
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700 font-medium whitespace-nowrap">Response deadline:</span>
-                  <span className="text-sm font-bold text-red-600 whitespace-nowrap">
-                    {deadline.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    <span className="font-normal ml-1 text-red-500">
-                      ({daysLeft > 0 ? `${daysLeft} days left` : 'Overdue'})
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => setView('dispute')}
-                    className="px-4 py-2 border border-gray-300 text-sm font-semibold text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
-                  >
-                    Dispute
-                  </button>
-                  <button
-                    onClick={initAccept}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
-                  >
-                    Accept And Fix
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
 

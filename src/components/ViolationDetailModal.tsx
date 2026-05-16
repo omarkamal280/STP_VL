@@ -69,10 +69,10 @@ function buildThread(v: Violation, dispute: Dispute | null, ack: Acknowledgment 
     msgs.push({ id: 'm3', from: 'system', name: 'System', text: dispute.opsReply, ts: dispute.opsRepliedAt!, tag: 'Violation Dismissed — Seller Cleared', tagColor: 'bg-green-100 text-green-700' });
   }
 
-  if (ack && (v.status === 'acknowledged' || v.status === 'insufficient' || v.status === 'closed')) {
+  if (ack && (v.status === 'acknowledged' || v.status === 'insufficient' || v.status === 'fixed')) {
     msgs.push({ id: 'm4', from: 'seller', name: `Seller ${v.sellerId}`, text: ack.poaFollowed, ts: ack.submittedAt, tag: 'Acknowledged — Fix Submitted' });
   }
-  if (ack?.opsReply && v.status === 'closed') {
+  if (ack?.opsReply && v.status === 'fixed') {
     msgs.push({ id: 'm5', from: 'ops', name: 'Risk Team', text: ack.opsReply, ts: ack.opsRepliedAt!, tag: 'Fix Accepted — Closed', tagColor: 'bg-slate-200 text-slate-700' });
   }
   if (ack?.opsReply && v.status === 'insufficient') {
@@ -103,8 +103,9 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
   const [sellerDispText, setSellerDispText] = useState('');
   const [sellerFiles, setSellerFiles]       = useState<string[]>([]);
   const [sellerDone, setSellerDone]         = useState(false);
-  const [opsAction, setOpsAction]           = useState<'uphold' | 'appeal' | 'dismiss' | 'accept_fix' | 'insufficient' | 'void' | ''>('');
+  const [opsAction, setOpsAction]           = useState<'uphold' | 'appeal' | 'dismiss' | 'accept_fix' | 'insufficient' | 'request_more_info' | 'void' | ''>('');
   const [opsReason, setOpsReason]           = useState('');
+  const [opsFiles, setOpsFiles]             = useState<string[]>([]);
   const [opsDone, setOpsDone]               = useState(false);
   const [poaOpen, setPoaOpen]               = useState(true);
   const isAdmin = useContext(AdminContext);
@@ -112,7 +113,7 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
   React.useEffect(() => {
     if (isOpen) {
       setSellerAction(''); setSellerAckText(''); setSellerDispText(''); setSellerFiles([]); setSellerDone(false);
-      setOpsAction(''); setOpsReason(''); setOpsDone(false); setPoaOpen(true);
+      setOpsAction(''); setOpsReason(''); setOpsFiles([]); setOpsDone(false); setPoaOpen(true);
     }
   }, [isOpen, violation?.id]);
 
@@ -125,6 +126,7 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
   const status  = violation.status;
   const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const addFile = () => { const avail = SIMULATED_FILES.filter(f => !sellerFiles.includes(f)); if (avail.length) setSellerFiles(p => [...p, avail[0]]); };
+  const addOpsFile = () => { const avail = SIMULATED_FILES.filter(f => !opsFiles.includes(f)); if (avail.length) setOpsFiles(p => [...p, avail[0]]); };
 
   // ── Seller action panel ───────────────────────────────────────────────────
   const renderSellerPanel = () => {
@@ -202,7 +204,7 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         </div>
       </div>
     );
-    if (status === 'closed') return (
+    if (status === 'fixed') return (
       <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-100 border border-slate-200">
         <CheckCircle className="w-5 h-5 text-slate-500 flex-shrink-0" />
         <div>
@@ -269,7 +271,7 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
   // Admin-only actions (Appeal from upheld, Void anywhere, decisions on Appealed) are gated by AdminContext.
   const renderOpsPanel = () => {
     type ActionMeta = {
-      key: 'uphold' | 'appeal' | 'dismiss' | 'accept_fix' | 'insufficient' | 'void';
+      key: 'uphold' | 'appeal' | 'dismiss' | 'accept_fix' | 'insufficient' | 'request_more_info' | 'void';
       label: string;
       cls: string;
       doneLabel: string;
@@ -278,6 +280,11 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
       doneBg: string;
       promptLabel: string;
       promptPlaceholder: string;
+      // Card-style picker meta
+      cardTitle: string;
+      cardSub: string;
+      cardCls: string; // tailwind classes for card background/border/text
+      CardIcon: React.ComponentType<{ className?: string }>;
       adminOnly?: boolean;
     };
 
@@ -288,6 +295,9 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         icon: <XCircle className="w-5 h-5 text-red-500" />, doneBg: 'bg-red-50 border-red-200',
         promptLabel: 'Message to seller — explain why the violation is being upheld',
         promptPlaceholder: 'Explain to the seller why their dispute is rejected and the violation stands…',
+        cardTitle: 'Uphold', cardSub: 'Closes the ticket & upholds the violation',
+        cardCls: 'bg-red-50 border-red-100 hover:bg-red-100/70 text-red-700',
+        CardIcon: XCircle,
       },
       dismiss: {
         key: 'dismiss', label: '✓ Dismiss', cls: 'bg-green-600 hover:bg-green-700',
@@ -295,6 +305,19 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         icon: <CheckCircle className="w-5 h-5 text-green-500" />, doneBg: 'bg-green-50 border-green-200',
         promptLabel: 'Message to seller — explain why the violation is being dismissed',
         promptPlaceholder: 'Explain why the dispute was accepted on its merits and the violation is being dismissed…',
+        cardTitle: 'Dismiss', cardSub: 'No violation found',
+        cardCls: 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700',
+        CardIcon: X,
+      },
+      request_more_info: {
+        key: 'request_more_info', label: '⚠ Request more info', cls: 'bg-amber-500 hover:bg-amber-600',
+        doneLabel: 'Asked seller for more info', doneSub: 'Your message has been sent to the seller. The case stays open until they reply.',
+        icon: <AlertTriangle className="w-5 h-5 text-amber-500" />, doneBg: 'bg-amber-50 border-amber-200',
+        promptLabel: 'Message to seller — what else do you need from them?',
+        promptPlaceholder: 'Tell the seller exactly what information or evidence is missing so they can respond…',
+        cardTitle: 'Request more info', cardSub: 'Insufficient information',
+        cardCls: 'bg-amber-50 border-amber-100 hover:bg-amber-100/70 text-amber-700',
+        CardIcon: AlertTriangle,
       },
       accept_fix: {
         key: 'accept_fix', label: '✓ Accept Fix', cls: 'bg-slate-600 hover:bg-slate-700',
@@ -302,6 +325,9 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         icon: <CheckCircle className="w-5 h-5 text-slate-500" />, doneBg: 'bg-slate-100 border-slate-200',
         promptLabel: 'Message to seller — confirm the fix is accepted',
         promptPlaceholder: 'Confirm the corrective action is sufficient and the case is now closed…',
+        cardTitle: 'Accept Fix', cardSub: 'Close the case',
+        cardCls: 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700',
+        CardIcon: CheckCircle,
       },
       insufficient: {
         key: 'insufficient', label: '⚠ Insufficient', cls: 'bg-amber-500 hover:bg-amber-600',
@@ -309,6 +335,9 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         icon: <AlertTriangle className="w-5 h-5 text-amber-500" />, doneBg: 'bg-amber-50 border-amber-200',
         promptLabel: 'Message to seller — what specifically is missing?',
         promptPlaceholder: 'Tell the seller exactly what information or evidence is missing so they can resubmit…',
+        cardTitle: 'Insufficient', cardSub: 'Ask for more on the fix',
+        cardCls: 'bg-amber-50 border-amber-100 hover:bg-amber-100/70 text-amber-700',
+        CardIcon: AlertTriangle,
       },
       appeal: {
         key: 'appeal', label: '↑ Appeal', cls: 'bg-blue-600 hover:bg-blue-700',
@@ -316,6 +345,9 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         icon: <TrendingUp className="w-5 h-5 text-blue-500" />, doneBg: 'bg-blue-50 border-blue-200',
         promptLabel: 'Message to seller — explain the escalation',
         promptPlaceholder: 'Explain why this case is being escalated for a final review…',
+        cardTitle: 'Appeal', cardSub: 'Escalate for final review',
+        cardCls: 'bg-blue-50 border-blue-100 hover:bg-blue-100/70 text-blue-700',
+        CardIcon: TrendingUp,
         adminOnly: true,
       },
       void: {
@@ -324,21 +356,24 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         icon: <Ban className="w-5 h-5 text-gray-400" />, doneBg: 'bg-gray-50 border-gray-200',
         promptLabel: 'Reason for voiding (internal — not shown to seller)',
         promptPlaceholder: 'Explain the process or claim error that requires this record to be voided…',
+        cardTitle: 'Void', cardSub: 'Process or claim error',
+        cardCls: 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-600',
+        CardIcon: Ban,
         adminOnly: true,
       },
     };
 
     // Available actions per status
     const availableByStatus: Record<string, ActionMeta['key'][]> = {
-      sanctioned:   ['void'],                                     // admin-only Void; otherwise awaiting seller
-      disputed:     ['uphold', 'dismiss', 'void'],                // analyst decides; admin can Void
-      acknowledged: ['accept_fix', 'insufficient', 'void'],       // analyst reviews fix; admin can Void
-      insufficient: ['void'],                                     // awaiting seller resubmit; admin can Void
-      upheld:       ['appeal', 'void'],                           // admin only — appeal or void
-      appealed:     ['uphold', 'dismiss', 'void'],                // admin only — final decision
-      closed:       ['void'],                                     // terminal; admin can Void
-      dismissed:    ['void'],                                     // terminal; admin can Void
-      voided:       [],                                           // terminal
+      sanctioned:   ['uphold', 'void'],                                            // analyst can uphold directly; admin can Void
+      disputed:     ['dismiss', 'request_more_info', 'uphold', 'void'],       // analyst decides; admin can Void
+      acknowledged: ['accept_fix', 'insufficient', 'void'],                   // analyst reviews fix; admin can Void
+      insufficient: ['void'],                                                 // awaiting seller resubmit; admin can Void
+      upheld:       ['appeal', 'void'],                                       // admin only — appeal or void
+      appealed:     ['uphold', 'dismiss', 'void'],                            // admin only — final decision
+      fixed:        ['void'],                                                 // terminal; admin can Void
+      dismissed:    ['void'],                                                 // terminal; admin can Void
+      voided:       [],                                                       // terminal
     };
 
     // Appealed-state actions are entirely admin-only (override the per-action adminOnly flag)
@@ -371,7 +406,7 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
       if (status === 'insufficient') return { cls: 'bg-amber-50 border-amber-200 text-amber-700',    icon: <AlertTriangle className="w-4 h-4 text-amber-500" />, text: 'Waiting on the seller to resubmit additional information.' };
       if (status === 'upheld')       return { cls: 'bg-red-50 border-red-200 text-red-700',          icon: <XCircle className="w-4 h-4 text-red-500" />, text: 'Upheld — seller is liable. Only an admin can move this to Appealed.' };
       if (status === 'appealed')     return { cls: 'bg-blue-50 border-blue-200 text-blue-700',       icon: <Scale className="w-4 h-4 text-blue-500" />, text: 'Final review — admin decision only.' };
-      if (status === 'closed')       return { cls: 'bg-slate-100 border-slate-200 text-slate-700',   icon: <CheckCircle className="w-4 h-4 text-slate-500" />, text: 'Closed — fix accepted. Black points still apply.' };
+      if (status === 'fixed')       return { cls: 'bg-slate-100 border-slate-200 text-slate-700',   icon: <CheckCircle className="w-4 h-4 text-slate-500" />, text: 'Closed — fix accepted. Black points still apply.' };
       if (status === 'dismissed')    return { cls: 'bg-green-50 border-green-200 text-green-700',    icon: <CheckCircle className="w-4 h-4 text-green-600" />, text: 'Dismissed — seller cleared.' };
       if (status === 'voided')       return { cls: 'bg-gray-50 border-gray-200 text-gray-600',       icon: <Ban className="w-4 h-4 text-gray-400" />, text: 'Voided — hidden from seller. Record kept for audit.' };
       return null;
@@ -387,12 +422,13 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
       );
     }
 
-    // Action selected — show the message-to-seller form
+    // Action selected — show the message-to-seller form (with optional attachments)
     if (opsAction) {
       const c = ACTIONS[opsAction as ActionMeta['key']];
+      const canAttach = SIMULATED_FILES.some(f => !opsFiles.includes(f));
       return (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-gray-700">{c.label.replace(/^[^A-Za-z]+\s*/, '')} — confirm</p>
+          <p className="text-xs font-semibold text-gray-700">{c.cardTitle} — confirm</p>
           <label className="text-xs font-medium text-gray-600">{c.promptLabel} <span className="text-red-500">*</span></label>
           <textarea
             value={opsReason}
@@ -401,14 +437,48 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
             placeholder={c.promptPlaceholder}
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
           />
-          <div className="flex gap-2">
-            <button onClick={() => { setOpsAction(''); setOpsReason(''); }} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
+
+          {/* Optional attachments */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-gray-600">Attachments <span className="text-gray-400">(optional)</span></p>
+            {opsFiles.length > 0 && (
+              <div className="space-y-1">
+                {opsFiles.map(f => (
+                  <div key={f} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <Paperclip className="w-3 h-3 text-gray-400" />
+                      {f}
+                    </span>
+                    <button
+                      onClick={() => setOpsFiles(p => p.filter(x => x !== f))}
+                      className="text-gray-400 hover:text-red-500 ml-2 flex-shrink-0"
+                      aria-label={`Remove ${f}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={addOpsFile}
+              disabled={!canAttach}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Paperclip className="w-3 h-3" />
+              {canAttach ? 'Attach file' : 'No more files'}
+            </button>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => { setOpsAction(''); setOpsReason(''); setOpsFiles([]); }} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Back</button>
             <button
               onClick={() => { if (opsReason.trim()) setOpsDone(true); }}
               disabled={!opsReason.trim()}
               className={`flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed ${c.cls}`}
             >
-              Send & Confirm
+              Confirm
             </button>
           </div>
         </div>
@@ -432,17 +502,22 @@ const ViolationDetailModal: React.FC<ViolationDetailModalProps> = ({ violation, 
         )}
         {allowedKeys.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Take Action</p>
-            <div className="grid grid-cols-1 gap-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Choose Action</p>
+            <p className="text-[11px] text-gray-400 -mt-1">Messages will be sent to the seller and logged in the system.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {allowedKeys.filter(k => k !== 'void').map(k => {
                 const a = ACTIONS[k];
                 return (
                   <button
                     key={k}
                     onClick={() => setOpsAction(k)}
-                    className={`w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${a.cls}`}
+                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl border transition-all ${a.cardCls}`}
                   >
-                    {a.label}
+                    <div className="flex items-center gap-1.5">
+                      <a.CardIcon className="w-4 h-4" />
+                      <span className="text-sm font-bold">{a.cardTitle}</span>
+                    </div>
+                    <span className="text-[11px] opacity-80">{a.cardSub}</span>
                   </button>
                 );
               })}

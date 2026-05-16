@@ -1,173 +1,59 @@
 import React, { useState, useMemo } from 'react';
 import {
-  AlertTriangle, Clock, CheckCircle, FileText, Eye,
-  ShieldAlert, ChevronDown, ChevronUp,
-  User,
+  Search,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { mockViolations, mockDisputes, mockAcknowledgments, mockSellers } from '../mockData';
 import { Violation, ViolationStatus } from '../types';
 import ViolationDetailModal from './ViolationDetailModal';
 
-// ── Simulated logged-in analyst ───────────────────────────────────────────────
+// ── Simulated logged-in analyst ─────────────────────────────────
 const ME = 'Sarah Johnson';
 const WINDOW_DAYS = 180;
+const PAGE_SIZE = 8;
 
-// ── Status config ─────────────────────────────────────────────────────────────
+// ── Status config ────────────────────────────────────────────
 const STATUS_PILL: Record<ViolationStatus, { label: string; cls: string }> = {
   sanctioned:   { label: 'Sanctioned',   cls: 'bg-orange-100 text-orange-700' },
-  disputed:     { label: 'Disputed',     cls: 'bg-yellow-100 text-yellow-700' },
+  disputed:     { label: 'Disputed',     cls: 'bg-blue-100 text-blue-700'     },
   acknowledged: { label: 'Acknowledged', cls: 'bg-purple-100 text-purple-700' },
   insufficient: { label: 'Insufficient', cls: 'bg-amber-100 text-amber-700'   },
-  closed:       { label: 'Closed',       cls: 'bg-slate-200 text-slate-700'   },
+  fixed:       { label: 'Fixed',       cls: 'bg-slate-200 text-slate-700'   },
   upheld:       { label: 'Upheld',       cls: 'bg-red-100 text-red-700'       },
-  appealed:     { label: 'Appealed',     cls: 'bg-blue-100 text-blue-700'     },
+  appealed:     { label: 'Appealed',     cls: 'bg-indigo-100 text-indigo-700' },
   dismissed:    { label: 'Dismissed',    cls: 'bg-green-100 text-green-700'   },
-  voided:                  { label: 'Voided',       cls: 'bg-gray-100 text-gray-500'     },
+  voided:       { label: 'Voided',       cls: 'bg-gray-100 text-gray-500'     },
 };
 
 // Bucket definitions
 const NEEDS_ACTION: ViolationStatus[]    = ['disputed', 'acknowledged', 'appealed'];
 const AWAITING_SELLER: ViolationStatus[] = ['sanctioned', 'insufficient'];
-const CLOSED: ViolationStatus[]          = ['closed', 'upheld', 'dismissed', 'voided'];
+const CLOSED: ViolationStatus[]          = ['fixed', 'upheld', 'dismissed', 'voided'];
 
-function daysOld(d: Date): string {
-  const n = Math.floor((Date.now() - d.getTime()) / 86400000);
-  if (n === 0) return 'today';
-  if (n === 1) return '1d ago';
-  return `${n}d ago`;
-}
+type TabKey = 'needs' | 'awaiting' | 'closed';
 
-// ── Violation row ─────────────────────────────────────────────────────────────
-interface RowProps { v: Violation; onOpen: (v: Violation) => void; showAssignee?: boolean; }
-
-const ViolationRow: React.FC<RowProps> = ({ v, onOpen, showAssignee }) => {
-  const seller  = mockSellers[v.sellerId];
+// ── Helpers ───────────────────────────────────────────────────────────────
+function getMessageFromSeller(v: Violation): string {
   const dispute = mockDisputes.find(d => d.violationId === v.id);
-  const ack     = mockAcknowledgments.find(a => a.violationId === v.id);
-  const { label, cls } = STATUS_PILL[v.status];
-  const isActionable = NEEDS_ACTION.includes(v.status);
-
-  return (
-    <div className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50/80 transition-colors">
-      {/* Left: icon + info */}
-      <div className="flex items-start gap-3 flex-1 min-w-0">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-          isActionable ? 'bg-amber-50' : AWAITING_SELLER.includes(v.status) ? 'bg-orange-50' : 'bg-gray-50'
-        }`}>
-          <ShieldAlert className={`w-4 h-4 ${
-            isActionable ? 'text-amber-500' : AWAITING_SELLER.includes(v.status) ? 'text-orange-400' : 'text-gray-400'
-          }`} />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-sm font-semibold text-gray-800">{v.id}</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${cls}`}>{label}</span>
-          </div>
-
-          <p className="text-xs text-gray-500 mt-0.5 truncate">
-            {v.type} · {seller?.name ?? v.sellerId}
-            {showAssignee && v.assignedTo && <span className="text-gray-400"> · {v.assignedTo}</span>}
-          </p>
-
-          {(dispute || ack) && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xl italic">
-              {dispute
-                ? `"${dispute.reason.slice(0, 90)}…"`
-                : ack
-                ? `"${ack.poaFollowed.slice(0, 90)}…"`
-                : null}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Right: age + action */}
-      <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-        <span className="text-xs text-gray-400 whitespace-nowrap">{daysOld(v.createdAt)}</span>
-        <button
-          onClick={() => onOpen(v)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap ${
-            isActionable
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'border border-gray-200 text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          <Eye className="w-3.5 h-3.5" />
-          {isActionable ? 'Review & Respond' : 'View'}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// ── Collapsible section ───────────────────────────────────────────────────────
-interface SectionProps {
-  title: string;
-  subtitle: string;
-  count: number;
-  borderCls: string;
-  iconBg: string;
-  icon: React.ReactNode;
-  urgent?: boolean;
-  violations: Violation[];
-  onOpen: (v: Violation) => void;
-  defaultOpen?: boolean;
-  showAssignee?: boolean;
+  if (dispute) return dispute.reason;
+  const ack = mockAcknowledgments.find(a => a.violationId === v.id);
+  if (ack) return ack.poaFollowed;
+  if (v.status === 'sanctioned')   return 'Awaiting seller response — no message yet.';
+  if (v.status === 'insufficient') return 'Awaiting seller resubmission with additional information.';
+  return '—';
 }
 
-const WorkSection: React.FC<SectionProps> = ({
-  title, subtitle, count, borderCls, iconBg, icon, urgent,
-  violations, onOpen, defaultOpen = true, showAssignee,
-}) => {
-  const [open, setOpen] = useState(defaultOpen);
 
-  return (
-    <div className={`bg-white rounded-2xl border overflow-hidden ${borderCls}`}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-            {icon}
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-bold text-gray-900">{title}</p>
-            <p className="text-xs text-gray-500">{subtitle}</p>
-          </div>
-          <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
-            urgent && count > 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
-          }`}>
-            {count}
-          </span>
-        </div>
-        {open
-          ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
-      </button>
-
-      {open && (
-        <div className="border-t border-gray-100 divide-y divide-gray-100">
-          {violations.length === 0
-            ? <p className="px-5 py-6 text-sm text-gray-400 text-center">Nothing here.</p>
-            : violations.map(v => (
-                <ViolationRow key={v.id} v={v} onOpen={onOpen} showAssignee={showAssignee} />
-              ))
-          }
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Main component ───────────────────────────────────────────────────────
 const MyWork: React.FC = () => {
   const [selected, setSelected] = useState<Violation | null>(null);
-  const [isOpen, setIsOpen]     = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>('needs');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
-  const open  = (v: Violation) => { setSelected(v); setIsOpen(true); };
-  const close = () => { setIsOpen(false); setSelected(null); };
+  const openRow  = (v: Violation) => { setSelected(v); setIsModalOpen(true); };
+  const closeRow = () => { setIsModalOpen(false); setSelected(null); };
 
   // 180-day window
   const cutoff = useMemo(() => {
@@ -176,112 +62,202 @@ const MyWork: React.FC = () => {
     return d;
   }, []);
 
-  const all180 = useMemo(() =>
+  const mine180 = useMemo(() =>
     mockViolations
-      .filter(v => v.createdAt >= cutoff)
+      .filter(v => v.createdAt >= cutoff && v.assignedTo === ME)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
   [cutoff]);
 
-  const mine180 = useMemo(() => all180.filter(v => v.assignedTo === ME), [all180]);
+  const needsAction    = useMemo(() => mine180.filter(v => NEEDS_ACTION.includes(v.status)),    [mine180]);
+  const awaitingSeller = useMemo(() => mine180.filter(v => AWAITING_SELLER.includes(v.status)), [mine180]);
+  const closedRows     = useMemo(() => mine180.filter(v => CLOSED.includes(v.status)),          [mine180]);
 
-  const source = mine180;
+  const tabConfig: Record<TabKey, { label: string; count: number; rows: Violation[] }> = {
+    needs:    { label: 'Needs My Action',         count: needsAction.length,    rows: needsAction },
+    awaiting: { label: 'Awaiting Seller Response', count: awaitingSeller.length, rows: awaitingSeller },
+    closed:   { label: 'Closed',                   count: closedRows.length,     rows: closedRows },
+  };
 
-  const needsAction    = useMemo(() => source.filter(v => NEEDS_ACTION.includes(v.status)),    [source]);
-  const awaitingSeller = useMemo(() => source.filter(v => AWAITING_SELLER.includes(v.status)), [source]);
-  const closed         = useMemo(() => source.filter(v => CLOSED.includes(v.status)),          [source]);
+  // Filter active tab rows by search (matches violation id or seller name)
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = tabConfig[activeTab].rows;
+    if (!q) return rows;
+    return rows.filter(v => {
+      const seller = mockSellers[v.sellerId];
+      return v.id.toLowerCase().includes(q) || (seller?.name.toLowerCase().includes(q) ?? false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, activeTab, mine180]);
 
-  const stats = useMemo(() => ({
-    total:    mine180.length,
-    needsMe:  mine180.filter(v => NEEDS_ACTION.includes(v.status)).length,
-    waiting:  mine180.filter(v => AWAITING_SELLER.includes(v.status)).length,
-    closed:   mine180.filter(v => CLOSED.includes(v.status)).length,
-  }), [mine180]);
+  // Pagination
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const safePage  = Math.min(page, pageCount);
+  const pageRows  = filteredRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Reset page on tab/search change
+  React.useEffect(() => { setPage(1); }, [activeTab, search]);
+
+  const tabs: TabKey[] = ['needs', 'awaiting', 'closed'];
 
   return (
     <div className="space-y-5">
-
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900">My Work</h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-              <User className="w-3 h-3" /> {ME}
-            </span>
-            <span className="text-xs text-gray-400 font-medium">· Past {WINDOW_DAYS} days</span>
-          </div>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Violations assigned to you in the past {WINDOW_DAYS} days
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Assigned to Me</h1>
       </div>
 
-      {/* Stats bar */}
-      {(
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {([
-            { label: 'Assigned to me',  value: stats.total,   Icon: FileText,       cls: 'text-gray-700',   bg: 'bg-gray-50   border-gray-200'  },
-            { label: 'Needs my action', value: stats.needsMe, Icon: AlertTriangle,  cls: 'text-red-600',    bg: 'bg-red-50    border-red-200'    },
-            { label: 'Awaiting seller', value: stats.waiting, Icon: Clock,          cls: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' },
-            { label: 'Closed',          value: stats.closed,  Icon: CheckCircle,    cls: 'text-green-600',  bg: 'bg-green-50  border-green-200'  },
-          ] as const).map(({ label, value, Icon, cls, bg }) => (
-            <div key={label} className={`flex items-center gap-3 rounded-xl border p-4 ${bg}`}>
-              <Icon className={`w-5 h-5 flex-shrink-0 ${cls}`} />
-              <div>
-                <p className={`text-xl font-bold leading-none ${cls}`}>{value}</p>
-                <p className="text-xs text-gray-500 mt-1">{label}</p>
-              </div>
-            </div>
-          ))}
+      {/* KPI cards
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Assigned to Me"   value={stats.total}   Icon={ClipboardList} />
+        <KpiCard label="Needs my Action"  value={stats.needsMe} Icon={Flag} />
+        <KpiCard label="Awaiting Seller"  value={stats.waiting} Icon={Clock} />
+        <KpiCard label="Closed"           value={stats.closed}  Icon={CheckCircle2} />
+      </div> */}
+
+      {/* Table card */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Tabs */}
+        <div className="px-5 pt-4 border-b border-gray-100">
+          <div className="flex items-center gap-6">
+            {tabs.map(key => {
+              const t = tabConfig[key];
+              const active = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex items-center gap-2 pb-3 -mb-px border-b-2 text-sm font-semibold transition-colors ${
+                    active
+                      ? 'border-blue-600 text-blue-700'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t.label}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {t.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      )}
 
-      {/* Triage sections */}
-      <WorkSection
-        title="Needs My Action"
-        subtitle="Seller has responded — review their dispute or acknowledgment and decide"
-        count={needsAction.length}
-        borderCls="border-amber-200"
-        iconBg="bg-amber-100"
-        icon={<AlertTriangle className="w-4 h-4 text-amber-600" />}
-        urgent
-        violations={needsAction}
-        onOpen={open}
-        defaultOpen={true}
-        showAssignee={false}
-      />
+        {/* Search */}
+        <div className="px-5 py-4">
+          <div className="relative max-w-xs">
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search Violation Number.."
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
+            />
+          </div>
+        </div>
 
-      <WorkSection
-        title="Awaiting Seller Response"
-        subtitle="Violation has been sanctioned — no reply received yet"
-        count={awaitingSeller.length}
-        borderCls="border-orange-200"
-        iconBg="bg-orange-100"
-        icon={<Clock className="w-4 h-4 text-orange-500" />}
-        violations={awaitingSeller}
-        onOpen={open}
-        defaultOpen={true}
-        showAssignee={false}
-      />
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50/60">
+              <tr className="text-left text-xs font-semibold text-gray-500">
+                <th className="px-5 py-3">Partner Name</th>
+                <th className="px-5 py-3">Violation Number</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Message from Seller</th>
+                <th className="px-5 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {pageRows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-10 text-center text-sm text-gray-400">
+                    Nothing in this bucket.
+                  </td>
+                </tr>
+              ) : pageRows.map(v => {
+                const seller = mockSellers[v.sellerId];
+                const { label, cls } = STATUS_PILL[v.status];
+                const message = getMessageFromSeller(v);
+                const actionable = NEEDS_ACTION.includes(v.status);
+                return (
+                  <tr key={v.id} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="px-5 py-4 align-top text-sm font-medium text-gray-900 whitespace-nowrap">
+                      {seller?.name ?? v.sellerId}
+                    </td>
+                    <td className="px-5 py-4 align-top text-sm text-gray-700 whitespace-nowrap">
+                      {v.id}
+                    </td>
+                    <td className="px-5 py-4 align-top whitespace-nowrap">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${cls}`}>
+                        {label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 align-top text-sm text-gray-600 max-w-xl">
+                      <p className="line-clamp-3">{message}</p>
+                    </td>
+                    <td className="px-5 py-4 align-top text-right whitespace-nowrap">
+                      <button
+                        onClick={() => openRow(v)}
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                      >
+                        {actionable ? 'Respond' : 'View'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-      <WorkSection
-        title="Closed"
-        subtitle="Upheld, dismissed, or voided — no further action needed"
-        count={closed.length}
-        borderCls="border-gray-200"
-        iconBg="bg-gray-100"
-        icon={<CheckCircle className="w-4 h-4 text-gray-500" />}
-        violations={closed}
-        onOpen={open}
-        defaultOpen={false}
-        showAssignee={false}
-      />
+        {/* Pagination */}
+        {filteredRows.length > 0 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">
+              Showing {(safePage - 1) * PAGE_SIZE + 1} to {Math.min(safePage * PAGE_SIZE, filteredRows.length)} of {filteredRows.length} entries
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: pageCount }, (_, i) => i + 1).slice(0, 5).map(n => (
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                    n === safePage
+                      ? 'bg-blue-600 text-white'
+                      : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                disabled={safePage === pageCount}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Modal */}
       <ViolationDetailModal
         violation={selected}
-        isOpen={isOpen}
-        onClose={close}
+        isOpen={isModalOpen}
+        onClose={closeRow}
         mode="ops"
       />
     </div>

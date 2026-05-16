@@ -186,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         violation.status === 'appealed' ? 'bg-blue-100 text-blue-800' :
                         violation.status === 'acknowledged' ? 'bg-purple-100 text-purple-800' :
                         violation.status === 'insufficient' ? 'bg-amber-100 text-amber-800' :
-                        violation.status === 'closed' ? 'bg-slate-200 text-slate-700' :
+                        violation.status === 'fixed' ? 'bg-slate-200 text-slate-700' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {violation.status}

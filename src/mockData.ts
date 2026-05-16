@@ -97,7 +97,7 @@ export const mockViolations: Violation[] = [
     id: 'V-009', sellerId: '334890', projectId: 'PRJ-2025-009',
     type: 'Counterfeit Listing', severity: 'critical', assignedTo: 'Michael Chen',
     description: 'High-confidence counterfeit detection on luxury handbag listings.',
-    messageToSeller: 'Counterfeit listings detected. Immediate response required.',
+    messageToSeller: 'Hi seller, Counterfeit listings detected. Immediate response required. Please dont do this again. For more information refer to the following: fhbhywbubuvbrvrvbhwrbv whv wbvhfebfhr3bhr3bfhr3fbrhfubfhefbehfuebfedbudvudhwvbwvhubvdv',
     createdAt: daysAgo(2), status: 'sanctioned',
     evidence: ['counterfeit_report.pdf'], zohoTicketId: 'ZT-1009',
     poa: { title: 'Counterfeit — Plan of Action', summary: 'Remove all flagged items.', steps: ['Remove listings.', 'Prove authenticity.'] },
@@ -188,7 +188,7 @@ export const mockViolations: Violation[] = [
     type: 'IP Violation', severity: 'medium', assignedTo: 'Sarah Johnson',
     description: 'Unverified Apple accessory listings — possible trademark infringement.',
     messageToSeller: 'Apple IP complaint received. Please respond.',
-    createdAt: daysAgo(50), status: 'closed',
+    createdAt: daysAgo(50), status: 'fixed',
     evidence: ['apple_complaint.pdf'], zohoTicketId: 'ZT-1019',
     poa: { title: 'IP — Plan of Action', summary: 'Provide Apple authorisation or remove listings.', steps: ['Remove listings or provide authorisation.'] },
   },
@@ -473,6 +473,15 @@ export const templatePlaceholders: TemplatePlaceholder[] = [
     example: '2024-03-20'
   }
 ];
+
+// Per-violation required placeholder keys
+export const violationPlaceholders: Record<string, string[]> = {
+  DELIVERY:      ['{sellerId}', '{projectId}', '{scheduledDate}', '{actualDate}', '{deadline}'],
+  PRODUCT:       ['{sellerId}', '{projectId}', '{suspectedItems}', '{violationCount}', '{deadline}'],
+  PACKAGING:     ['{sellerId}', '{projectId}', '{qualityIssues}', '{deadline}'],
+  COMMUNICATION: ['{sellerId}', '{projectId}', '{communicationIssues}', '{deadline}'],
+  FRAUD:         ['{sellerId}', '{projectId}', '{suspectedItems}', '{violationCount}', '{deadline}'],
+};
 
 export interface MockSellerInfo {
   name: string;

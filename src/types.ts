@@ -12,7 +12,7 @@ export type ViolationStatus =
   | 'disputed'      // seller submitted a dispute; internal team investigating
   | 'acknowledged'  // seller accepted and is providing fix evidence; analyst reviewing
   | 'insufficient'  // analyst flagged the seller's fix evidence as missing info; seller must resubmit
-  | 'closed'        // analyst accepted the fix; violation stands and points apply, no further enforcement
+  | 'fixed'        // analyst accepted the fix; violation stands and points apply, no further enforcement
   | 'upheld'        // analyst upheld disputed violation; seller liable, only admins can move to appealed
   | 'appealed'      // admin escalated for second & final review; admin only
   | 'dismissed'     // dispute accepted on merits; seller cleared, no penalty (terminal)

@@ -61,7 +61,7 @@ const STATUS_PILL: Record<ViolationStatus, { label: string; cls: string; icon: '
   disputed:     { label: 'Disputed',      cls: 'bg-yellow-100 text-yellow-700', icon: 'star' },
   acknowledged: { label: 'Acknowledged',  cls: 'bg-purple-100 text-purple-700', icon: 'star' },
   insufficient: { label: 'Insufficient',  cls: 'bg-amber-100 text-amber-700',   icon: 'star' },
-  closed:       { label: 'Closed',        cls: 'bg-slate-200 text-slate-700',   icon: 'star' },
+  fixed:       { label: 'Fixed',        cls: 'bg-slate-200 text-slate-700',   icon: 'star' },
   upheld:       { label: 'Upheld',        cls: 'bg-red-100 text-red-700',       icon: 'star' },
   appealed:     { label: 'Appealed',      cls: 'bg-blue-100 text-blue-700',     icon: 'star' },
   dismissed:    { label: 'Dismissed',     cls: 'bg-green-100 text-green-700',   icon: 'star' },

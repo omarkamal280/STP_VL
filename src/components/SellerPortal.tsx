@@ -11,7 +11,7 @@ const SELLER_STATUS: Record<ViolationStatus, { label: string; pill: string; icon
   disputed:     { label: 'Under Investigation', pill: 'bg-yellow-100 text-yellow-700', icon: <Clock className="w-3.5 h-3.5" /> },
   acknowledged: { label: 'Fix Under Review',    pill: 'bg-purple-100 text-purple-700', icon: <Clock className="w-3.5 h-3.5" /> },
   insufficient: { label: 'More Info Needed',    pill: 'bg-amber-100 text-amber-700',   icon: <AlertTriangle className="w-3.5 h-3.5" />, action: 'Resubmit' },
-  closed:       { label: 'Closed',              pill: 'bg-slate-200 text-slate-700',   icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  fixed:       { label: 'Fixed',              pill: 'bg-slate-200 text-slate-700',   icon: <CheckCircle className="w-3.5 h-3.5" /> },
   upheld:       { label: 'Upheld',              pill: 'bg-red-100 text-red-700',       icon: <AlertTriangle className="w-3.5 h-3.5" /> },
   appealed:     { label: 'Final Review',        pill: 'bg-blue-100 text-blue-700',     icon: <Clock className="w-3.5 h-3.5" /> },
   dismissed:    { label: 'Dismissed',           pill: 'bg-green-100 text-green-700',   icon: <CheckCircle className="w-3.5 h-3.5" /> },

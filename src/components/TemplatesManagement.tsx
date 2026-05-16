@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Copy, Check, X, AlertCircle, Code } from 'lucide-react';
-import { mockMessageTemplates, templatePlaceholders } from '../mockData';
+import React, { useState, useRef } from 'react';
+import { Plus, Edit, Trash2, Copy, Check, X, AlertCircle } from 'lucide-react';
+import { mockMessageTemplates, templatePlaceholders, violationPlaceholders } from '../mockData';
 import { MessageTemplate, TemplatePlaceholder } from '../types';
 
 interface TemplatesManagementProps {
@@ -12,8 +12,8 @@ const TemplatesManagement: React.FC<TemplatesManagementProps> = () => {
   const [templates, setTemplates] = useState<MessageTemplate[]>(mockMessageTemplates);
   const [isEditing, setIsEditing] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
-  const [showPlaceholders, setShowPlaceholders] = useState(false);
   const [deletingTemplate, setDeletingTemplate] = useState<string | null>(null);
+  const cursorPosRef = useRef<number>(0);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -113,20 +113,27 @@ const TemplatesManagement: React.FC<TemplatesManagementProps> = () => {
   };
 
   const handleInsertPlaceholder = (placeholder: TemplatePlaceholder) => {
-    const textarea = document.getElementById('template-textarea') as HTMLTextAreaElement;
-    if (textarea) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newTemplate = formData.template.slice(0, start) + placeholder.key + formData.template.slice(end);
-      setFormData({ ...formData, template: newTemplate });
-      
-      // Set cursor position after inserted placeholder
-      setTimeout(() => {
+    const pos = cursorPosRef.current;
+    const before = formData.template.slice(0, pos);
+    const after  = formData.template.slice(pos);
+    const next   = before + placeholder.key + after;
+    setFormData({ ...formData, template: next });
+    const newPos = pos + placeholder.key.length;
+    cursorPosRef.current = newPos;
+    setTimeout(() => {
+      const textarea = document.getElementById('template-textarea') as HTMLTextAreaElement;
+      if (textarea) {
         textarea.focus();
-        textarea.setSelectionRange(start + placeholder.key.length, start + placeholder.key.length);
-      }, 0);
-    }
+        textarea.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
   };
+
+  const activePlaceholders: TemplatePlaceholder[] = formData.violationType
+    ? (violationPlaceholders[formData.violationType] ?? []).map(
+        key => templatePlaceholders.find(p => p.key === key)!
+      ).filter(Boolean)
+    : [];
 
   if (isEditing) {
     return (
@@ -175,58 +182,55 @@ const TemplatesManagement: React.FC<TemplatesManagementProps> = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Violation Type
+                    Violation Code Name
                   </label>
                   <select
                     value={formData.violationType}
                     onChange={(e) => setFormData({ ...formData, violationType: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Select type</option>
-                    <option value="DELIVERY">Delivery</option>
-                    <option value="PRODUCT">Product</option>
-                    <option value="PACKAGING">Packaging</option>
-                    <option value="COMMUNICATION">Communication</option>
+                    <option value="">Select Violation</option>
+                    <option value="DELIVERY">Listing</option>
+                    <option value="PRODUCT">Counterfeit</option>
+                    <option value="PACKAGING">Battery</option>
+                    <option value="COMMUNICATION">Rating</option>
                     <option value="FRAUD">Fraud</option>
-                    <option value="POLICY">Policy</option>
-                    <option value="QUALITY">Quality</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Severity
-                  </label>
-                  <select
-                    value={formData.severity}
-                    onChange={(e) => setFormData({ ...formData, severity: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Template Message
-                  </label>
-                  <button
-                    onClick={() => setShowPlaceholders(!showPlaceholders)}
-                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                  >
-                    <Code className="w-4 h-4" />
-                    <span>{showPlaceholders ? 'Hide' : 'Show'} Placeholders</span>
-                  </button>
+              {activePlaceholders.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">Suggested placeholders — click to insert at cursor:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activePlaceholders.map((p) => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => handleInsertPlaceholder(p)}
+                        title={p.description}
+                        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-400 transition-colors"
+                      >
+                        {p.key}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+              {!formData.violationType && (
+                <p className="text-xs text-gray-400">Select a violation above to see suggested placeholders.</p>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Template Message
+                </label>
                 <textarea
                   id="template-textarea"
                   value={formData.template}
                   onChange={(e) => setFormData({ ...formData, template: e.target.value })}
+                  onSelect={(e) => { cursorPosRef.current = (e.target as HTMLTextAreaElement).selectionStart; }}
+                  onBlur={(e)   => { cursorPosRef.current = e.target.selectionStart; }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={8}
                   placeholder="Enter your template message. Use placeholders like {sellerId}, {projectId}, etc."
@@ -251,28 +255,6 @@ const TemplatesManagement: React.FC<TemplatesManagementProps> = () => {
             </div>
 
             <div className="space-y-6">
-              {showPlaceholders && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Available Placeholders</h3>
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {templatePlaceholders.map((placeholder) => (
-                      <div
-                        key={placeholder.key}
-                        className="bg-white rounded border border-gray-200 p-3 hover:border-blue-300 cursor-pointer"
-                        onClick={() => handleInsertPlaceholder(placeholder)}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-mono text-blue-600">{placeholder.key}</span>
-                          <Plus className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xs text-gray-600 mb-1">{placeholder.description}</p>
-                        <p className="text-xs text-gray-500">Example: {placeholder.example}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -282,7 +264,7 @@ const TemplatesManagement: React.FC<TemplatesManagementProps> = () => {
                       <li>• Use placeholders to personalize messages</li>
                       <li>• Keep messages clear and professional</li>
                       <li>• Include specific action items when needed</li>
-                      <li>• Set appropriate violation type and severity</li>
+                      <li>• Set appropriate violation</li>
                     </ul>
                   </div>
                 </div>
