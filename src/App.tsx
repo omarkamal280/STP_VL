@@ -528,8 +528,6 @@ any state
                     { q: 'Attachment storage', detail: 'Do we store seller-submitted files ourselves or delegate to Echo?', owner: 'Engineering' },
                     { q: 'Seller appeals', detail: 'Do we allow sellers to appeal an upheld dispute, or is upheld final from the seller\'s perspective?', owner: 'Risk Ops' },
                     { q: 'Seller follow-up', detail: 'Are we comfortable blocking seller follow-up until the Risk Team responds first?', owner: 'Risk Ops' },
-                    { q: 'Bulk uploads', detail: 'What is the validation and review queue flow before a bulk-uploaded violation is sanctioned?', owner: 'Product + Engineering' },
-                    { q: 'Black point threshold', detail: 'What cumulative black point total triggers an account suspension or downgrade?', owner: 'Risk Ops' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
@@ -542,22 +540,6 @@ any state
                   ))}
                 </div>
               </section>
-
-              {/* 6. Out of Scope */}
-              <section className="space-y-3">
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide pb-1.5 border-b border-gray-100">6. Out of Scope (v1)</h2>
-                <ul className="list-disc pl-5 space-y-1 text-gray-600">
-                  <li>Live data integration (all data is currently mocked)</li>
-                  <li>Zoho deprecation migration plan</li>
-                  <li>Ref Master deprecation migration plan</li>
-                  <li>Echo message sync</li>
-                  <li>Bulk upload implementation</li>
-                  <li>Email/push notifications on state changes</li>
-                  <li>Seller appeal flow from the seller side</li>
-                  <li>Automated state transitions (e.g. auto-void after X days without seller response)</li>
-                </ul>
-              </section>
-
             </div>
           </div>
         </div>
@@ -643,7 +625,7 @@ any state
               <BookOpen className="w-3.5 h-3.5" /> Business Requirement Document
             </button>
             {/* PRD button */}
-            
+
             <button
               onClick={() => setShowPrd(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
