@@ -4,9 +4,11 @@ export interface ViolationCodeField {
   required?: boolean;
   type?: 'text' | 'checkbox' | 'select';
   selectOptions?: { value: string; label: string }[];
+  csvColumn?: string;
 }
 
 export interface ViolationCode {
+  id: number;
   code: string;
   label: string;
   family: string;
@@ -15,86 +17,158 @@ export interface ViolationCode {
   requiredCtaIds: string[];
 }
 
-// const INVESTIGATION_STATUS_OPTS = [
-//   { value: 'pending', label: 'Pending' },
-//   { value: 'in_progress', label: 'In Progress' },
-//   { value: 'completed', label: 'Completed' },
-//   { value: 'closed', label: 'Closed' },
-// ];
+const OFFER_FIELDS: ViolationCodeField[] = [
+  { field: 'offerCode',       label: 'Offer Code',       required: true,  csvColumn: 'offer_code' },
+  { field: 'sku',             label: 'SKU',              required: true,  csvColumn: 'sku' },
+  { field: 'brandCode',       label: 'Brand Code',       required: true,  csvColumn: 'brand_code' },
+  { field: 'productFulltype', label: 'Product Full Type',                 csvColumn: 'product_fulltype' },
+  { field: 'categoryComcat',  label: 'Category / Comcat',                 csvColumn: 'category_comcat' },
+];
 
-// const IP_FIELDS: ViolationCodeField[] = [
-//   { field: 'brandCode',   label: 'Brand Code',           required: true },
-//   { field: 'brandName',   label: 'Brand Name',           required: true },
-//   { field: 'skuAsn',      label: 'SKU / ASN',            required: true },
-//   { field: 'investigationType',   label: 'Investigation Type' },
-//   { field: 'investigationStatus', label: 'Investigation Status', type: 'select', selectOptions: INVESTIGATION_STATUS_OPTS },
-//   { field: 'actionOnOffers',      label: 'Action on Offers / SKUs' },
-//   { field: 'disapprovalReason',   label: 'Disapproval Reason' },
-//   { field: 'investigatedAcquitted', label: 'Investigated & Acquitted', type: 'checkbox' },
-// ];
+const ORDER_OFFER_FIELDS: ViolationCodeField[] = [
+  { field: 'itemNr',          label: 'Item Nr',          required: true,  csvColumn: 'item_nr' },
+  { field: 'orderNr',         label: 'Order Nr',         required: true,  csvColumn: 'order_nr' },
+  { field: 'offerCode',       label: 'Offer Code',       required: true,  csvColumn: 'offer_code' },
+  { field: 'sku',             label: 'SKU',              required: true,  csvColumn: 'sku' },
+  { field: 'brandCode',       label: 'Brand Code',       required: true,  csvColumn: 'brand_code' },
+  { field: 'productFulltype', label: 'Product Full Type',                 csvColumn: 'product_fulltype' },
+  { field: 'categoryComcat',  label: 'Category / Comcat',                 csvColumn: 'category_comcat' },
+];
 
-// const COMPLIANCE_FIELDS: ViolationCodeField[] = [
-//   { field: 'skuAsn',              label: 'SKU / ASN',          required: true },
-//   { field: 'actionOnOffers',      label: 'Action on Offers / SKUs' },
-//   { field: 'disapprovalReason',   label: 'Disapproval Reason' },
-// ];
-
-// const FRAUD_FIELDS: ViolationCodeField[] = [
-//   { field: 'investigationType',   label: 'Investigation Type',   required: true },
-//   { field: 'investigationStatus', label: 'Investigation Status', required: true, type: 'select', selectOptions: INVESTIGATION_STATUS_OPTS },
-//   { field: 'triggeredByFlag',     label: 'Triggered by Flag',   type: 'checkbox' },
-//   { field: 'skuAsn',              label: 'SKU / ASN (if applicable)' },
-//   { field: 'investigatedAcquitted', label: 'Investigated & Acquitted', type: 'checkbox' },
-// ];
-
-// const LEGAL_FIELDS: ViolationCodeField[] = [
-//   { field: 'investigationType',   label: 'Investigation Type',   required: true },
-//   { field: 'investigationStatus', label: 'Investigation Status', required: true, type: 'select', selectOptions: INVESTIGATION_STATUS_OPTS },
-//   { field: 'approver2',           label: 'Approver 2' },
-// ];
-
-// const ACCOUNT_FIELDS: ViolationCodeField[] = [
-//   { field: 'investigationType',   label: 'Investigation Type' },
-//   { field: 'investigationStatus', label: 'Investigation Status', type: 'select', selectOptions: INVESTIGATION_STATUS_OPTS },
-//   { field: 'approver2',           label: 'Approver 2' },
-// ];
-
-// const CONDUCT_FIELDS: ViolationCodeField[] = [
-//   { field: 'channel',             label: 'Channel',              required: true },
-//   { field: 'investigationType',   label: 'Investigation Type' },
-//   { field: 'investigationStatus', label: 'Investigation Status', type: 'select', selectOptions: INVESTIGATION_STATUS_OPTS },
-// ];
-
-// const CATALOG_FIELDS: ViolationCodeField[] = [
-//   { field: 'skuAsn',              label: 'SKU / ASN',            required: true },
-//   { field: 'brandCode',           label: 'Brand Code' },
-//   { field: 'brandName',           label: 'Brand Name' },
-//   { field: 'actionOnOffers',      label: 'Action on Offers / SKUs' },
-// ];
-
-const PLACEHOLDER_FIELDS: ViolationCodeField[] = [
-  { field: 'placeholder', label: 'Placeholder field' },
+const MULTIPLE_ACCOUNTS_FIELDS: ViolationCodeField[] = [
+  { field: 'linkedPartnerId',   label: 'Linked Partner ID',    required: true, csvColumn: 'id_partner' },
+  { field: 'linkedCountryCode', label: 'Linked Country Code',  required: true, csvColumn: 'country_code' },
+  { field: 'linkageType',       label: 'Linkage Type',         required: true, csvColumn: 'linkage_type' },
+  { field: 'linkingParameter',  label: 'Linking Parameter',    required: true, csvColumn: 'linking_parameter' },
 ];
 
 export const VIOLATION_CODES: ViolationCode[] = [
-  { code: 'IP_VIOLATION',       label: 'IP Violation',                   family: 'Intellectual Property', description: 'Seller is infringing intellectual property rights of a brand.',               step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02', 'CTA-03'] },
-  { code: 'FALSE_BRAND_REP',    label: 'False Brand Representation',     family: 'Intellectual Property', description: 'Seller falsely represents a brand without authorisation.',                  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02'] },
-  { code: 'COUNTERFEIT_SALE',   label: 'Counterfeit Sale',               family: 'Intellectual Property', description: 'Seller is selling counterfeit products.',                                  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02', 'CTA-09'] },
-  { code: 'COUNTERFEIT_LISTING',label: 'Counterfeit Listing',            family: 'Intellectual Property', description: 'Seller has listed counterfeit products without a completed sale.',          step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-01', 'CTA-02'] },
-  { code: 'PROHIBITED_PRODUCT', label: 'Prohibited Product',             family: 'Compliance',            description: 'Seller is selling products that are prohibited on the platform.',          step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-06', 'CTA-07'] },
-  { code: 'PROHIBITED_LISTING', label: 'Prohibited Listing',             family: 'Compliance',            description: 'Seller has listed items that are restricted or not allowed.',              step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-06', 'CTA-07'] },
-  { code: 'FAKE_DOCUMENT',      label: 'Fake Document Submission',       family: 'Fraud',                 description: 'Seller submitted fraudulent documents during onboarding or compliance.',   step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-08', 'CTA-09'] },
-  { code: 'FRAUDULENT_DISPUTE', label: 'Fraudulent Dispute',             family: 'Fraud',                 description: 'Seller filed a dispute in bad faith or with falsified information.',       step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-09', 'CTA-15'] },
-  { code: 'MONEY_LAUNDERING',   label: 'Money Laundering',               family: 'Fraud',                 description: 'Seller account suspected of being used for financial crimes.',             step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-09', 'CTA-18'] },
-  { code: 'FAKE_FEEDBACK',      label: 'Fake Feedback / Reviews',        family: 'Fraud',                 description: 'Seller manipulates review or rating system with fake feedback.',           step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-12', 'CTA-13'] },
-  { code: 'OFFER_ABUSE',        label: 'Offer / Promotion Abuse',        family: 'Fraud',                 description: 'Seller abuses platform promotion or pricing mechanisms.',                  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-10', 'CTA-09'] },
-  { code: 'MALICIOUS_ORDER',    label: 'Malicious Order Activity',       family: 'Fraud',                 description: 'Seller engages in malicious ordering patterns to harm competitors.',       step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-09', 'CTA-18'] },
-  { code: 'FALSE_LEGAL_ACTION', label: 'False Legal Action Threat',      family: 'Legal',                 description: 'Seller threatens or files false legal actions against the platform.',      step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-18'] },
-  { code: 'DUPLICATE_ACCOUNT',  label: 'Duplicate Account',              family: 'Account',               description: 'Seller operates multiple accounts in violation of platform policy.',       step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-16', 'CTA-09'] },
-  { code: 'ABUSIVE_COMM',       label: 'Abusive Communication',          family: 'Conduct',               description: 'Seller communicates in an abusive, threatening, or harassing manner.',    step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-14', 'CTA-15'] },
-  { code: 'ABUSIVE_CONDUCT',    label: 'Abusive Conduct',                family: 'Conduct',               description: 'Seller exhibits abusive behaviour towards customers or platform staff.',  step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-14', 'CTA-15', 'CTA-09'] },
-  { code: 'IMPROPER_RATING',    label: 'Improper Rating Manipulation',   family: 'Conduct',               description: 'Seller manipulates or disputes ratings in an improper way.',               step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-12', 'CTA-13'] },
-  { code: 'DUPLICATE_LISTING',  label: 'Duplicate Listing',              family: 'Catalog',               description: 'Seller has created duplicate listings for the same product.',              step2Fields: PLACEHOLDER_FIELDS, requiredCtaIds: ['CTA-17'] },
+  {
+    id: 1,  code: 'listing_restricted',        label: 'Listing Restricted',
+    family: 'Compliance',
+    description: 'Seller has one or more listings that are restricted on the platform.',
+    step2Fields: OFFER_FIELDS,
+    requiredCtaIds: ['CTA-06', 'CTA-07'],
+  },
+  {
+    id: 2,  code: 'listing_counterfeit',        label: 'Listing Counterfeit',
+    family: 'Intellectual Property',
+    description: 'Seller has listed counterfeit products without a completed sale.',
+    step2Fields: OFFER_FIELDS,
+    requiredCtaIds: ['CTA-01', 'CTA-02'],
+  },
+  {
+    id: 3,  code: 'sale_counterfeit',           label: 'Sale Counterfeit',
+    family: 'Intellectual Property',
+    description: 'Seller completed a sale of counterfeit products.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-01', 'CTA-02', 'CTA-09'],
+  },
+  {
+    id: 4,  code: 'rating_solicitation',        label: 'Rating Solicitation',
+    family: 'Conduct',
+    description: 'Seller solicited ratings or reviews in violation of platform policy.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-12', 'CTA-13'],
+  },
+  {
+    id: 5,  code: 'behavior_battery',           label: 'Battery',
+    family: 'Conduct',
+    description: 'Seller engaged in battery against a customer or platform representative.',
+    step2Fields: [],
+    requiredCtaIds: ['CTA-14', 'CTA-15', 'CTA-09'],
+  },
+  {
+    id: 6,  code: 'behavior_assault',           label: 'Assault',
+    family: 'Conduct',
+    description: 'Seller engaged in assault against a customer or platform representative.',
+    step2Fields: [],
+    requiredCtaIds: ['CTA-14', 'CTA-15', 'CTA-09'],
+  },
+  {
+    id: 7,  code: 'behavior_stock_blocking',    label: 'Stock Blocking',
+    family: 'Fraud',
+    description: 'Seller blocked competitor stock through malicious ordering.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-09', 'CTA-18'],
+  },
+  {
+    id: 8,  code: 'behavior_offer_abuse',       label: 'Offer Abuse',
+    family: 'Fraud',
+    description: 'Seller abused platform offer or promotion mechanisms.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-10', 'CTA-09'],
+  },
+  {
+    id: 9,  code: 'rating_manipulation',        label: 'Rating Manipulation',
+    family: 'Conduct',
+    description: 'Seller manipulates the ratings or review system.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-12', 'CTA-13'],
+  },
+  {
+    id: 10, code: 'behavior_money_laundering',  label: 'Money Laundering',
+    family: 'Fraud',
+    description: 'Seller account suspected of being used for financial crimes.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-09', 'CTA-18'],
+  },
+  {
+    id: 11, code: 'behavior_fraud_dispute',     label: 'Fraud / Dispute',
+    family: 'Fraud',
+    description: 'Seller filed a dispute in bad faith or with falsified information.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-09', 'CTA-15'],
+  },
+  {
+    id: 12, code: 'account_forgery',            label: 'Account Forgery',
+    family: 'Account',
+    description: 'Seller submitted forged documents or falsified account information.',
+    step2Fields: [],
+    requiredCtaIds: ['CTA-08', 'CTA-09'],
+  },
+  {
+    id: 13, code: 'account_multiple_accounts',  label: 'Multiple Accounts',
+    family: 'Account',
+    description: 'Seller operates multiple accounts in violation of platform policy.',
+    step2Fields: MULTIPLE_ACCOUNTS_FIELDS,
+    requiredCtaIds: ['CTA-16', 'CTA-09'],
+  },
+  {
+    id: 14, code: 'listing_duplicate',          label: 'Listing Duplicate',
+    family: 'Catalog',
+    description: 'Seller has created duplicate listings for the same product.',
+    step2Fields: OFFER_FIELDS,
+    requiredCtaIds: ['CTA-17'],
+  },
+  {
+    id: 15, code: 'legal_false_lawsuit',        label: 'Legal / False Lawsuit',
+    family: 'Legal',
+    description: 'Seller threatens or files a false legal action against the platform.',
+    step2Fields: [],
+    requiredCtaIds: ['CTA-18'],
+  },
+  {
+    id: 16, code: 'behavior_impersonation',     label: 'Behavior Impersonation',
+    family: 'Conduct',
+    description: 'Seller impersonates another seller, brand, or platform entity.',
+    step2Fields: [],
+    requiredCtaIds: ['CTA-14', 'CTA-15'],
+  },
+  {
+    id: 17, code: 'sale_restricted',            label: 'Sale Restricted',
+    family: 'Compliance',
+    description: 'Seller completed a sale of restricted products.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-06', 'CTA-07'],
+  },
+  {
+    id: 18, code: 'sale_intelectual_property',  label: 'Sale IP',
+    family: 'Intellectual Property',
+    description: 'Seller completed a sale infringing intellectual property rights.',
+    step2Fields: ORDER_OFFER_FIELDS,
+    requiredCtaIds: ['CTA-01', 'CTA-02', 'CTA-03'],
+  },
 ];
 
 export const COUNTRY_LABELS: Record<string, string> = {

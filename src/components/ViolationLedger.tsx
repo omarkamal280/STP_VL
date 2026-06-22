@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Filter, AlertCircle, ExternalLink, FileText, Upload, Eye, Check, X } from 'lucide-react';
+import { Search, Plus, Filter, AlertCircle, ExternalLink, FileText, Upload, Check, X } from 'lucide-react';
 import { mockViolations, mockDisputes, mockMessageTemplates, mockSellers } from '../mockData';
 import { VIOLATION_CODES, COUNTRY_LABELS } from '../violationSchemas';
 import { CALL_TO_ACTIONS } from '../ctaData';
@@ -147,174 +147,169 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
     setNewViolation(updated);
   };
 
-  // Bulk upload state
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [bulkData, setBulkData] = useState<any[]>([]);
-  const [bulkTemplateStrategy, setBulkTemplateStrategy] = useState<'csv' | 'auto' | 'single'>('csv');
-  const [selectedBulkTemplate, setSelectedBulkTemplate] = useState<MessageTemplate | null>(null);
-  const [previewMode, setPreviewMode] = useState(false);
-  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
+  // ── Bulk upload ─────────────────────────────────────────────────────────────
 
-  // Bulk violation interface
-  interface BulkViolation {
-    partnerID: string;
-    countryCode: string;
-    mpCode: string;
-    idViolation: string;
-    violationDate: string;
-    idPenalty: string;
-    family: string;
-    brandCode: string;
-    overallRisk: string;
-    requestSource: string;
-    triggeredByFlag: string;
-    investigationType: string;
-    investigationStatus: string;
-    skuAsn: string;
-    complaintTicket: string;
-    currentSellerRating: string;
-    brandName: string;
-    actionOnOffers: string;
-    disapprovalReason: string;
-    investigatedAcquitted: string;
-    actionedReason: string;
-    actionCode: string;
-    warningCount: string;
-    approver2: string;
-    channel: string;
-    misc: string;
-    // legacy fields kept for template message generation
-    sellerId?: string;
-    projectId?: string;
-    templateId?: string;
-    customMessage?: string;
-    generatedMessage?: string;
-    templateUsed?: MessageTemplate | null;
+  interface BulkRow {
+    // Universal entry fields
+    seller_id: string;
+    country: string;
+    violation_code: string;
+    violation_date: string;
+    request_source: string;
+    // Resolution fields (optional in CSV)
+    action_code: string;
+    warning_count: string;
+    private_notes: string;
+    custom_message: string;
+    template_id: string;
+    // Offer-type specific
+    offer_code: string;
+    sku: string;
+    brand_code: string;
+    product_fulltype: string;
+    category_comcat: string;
+    // Order+Offer specific
+    item_nr: string;
+    order_nr: string;
+    // Multiple-accounts specific
+    id_partner: string;
+    country_code: string;
+    linkage_type: string;
+    linking_parameter: string;
+    // Derived after parsing
+    _violationMeta: typeof VIOLATION_CODES[0] | null;
+    _template: MessageTemplate | null;
+    _generatedMessage: string;
+    _errors: string[];
   }
 
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
+  const [bulkPreviewIndex, setBulkPreviewIndex] = useState(0);
 
-  // Bulk upload template functions
-  const processBulkTemplates = (data: BulkViolation[]): BulkViolation[] => {
-    return data.map((violation, index) => {
-      let template: MessageTemplate | null = null;
-      let generatedMessage = '';
+  const generateBulkMessage = (row: BulkRow, template: MessageTemplate): string => {
+    return template.template
+      .replace(/{sellerId}/g,         row.seller_id        || '[Seller ID]')
+      .replace(/{offerCode}/g,        row.offer_code       || '[Offer Code]')
+      .replace(/{sku}/g,              row.sku              || '[SKU]')
+      .replace(/{brandCode}/g,        row.brand_code       || '[Brand Code]')
+      .replace(/{itemNr}/g,           row.item_nr          || '[Item Nr]')
+      .replace(/{orderNr}/g,          row.order_nr         || '[Order Nr]')
+      .replace(/{linkedPartnerId}/g,  row.id_partner       || '[Linked Partner ID]')
+      .replace(/{linkageType}/g,      row.linkage_type     || '[Linkage Type]')
+      .replace(/{linkingParameter}/g, row.linking_parameter|| '[Linking Parameter]');
+  };
 
-      // Strategy 1: Use CSV templateId
-      if (bulkTemplateStrategy === 'csv' && violation.templateId) {
-        template = mockMessageTemplates.find(t => t.id === violation.templateId) || null;
-      }
-      // Strategy 2: Use single template for all
-      else if (bulkTemplateStrategy === 'single' && selectedBulkTemplate) {
-        template = selectedBulkTemplate;
-      }
-      // Strategy 3: Auto-assign by type and severity
-      else if (bulkTemplateStrategy === 'auto') {
-        template = mockMessageTemplates.find(t => 
-          t.violationType === violation.idViolation && 
-          t.severity === violation.overallRisk &&
-          t.isActive
-        ) || null;
+  const parseBulkCsv = (text: string): BulkRow[] => {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+    return lines.slice(1).map(line => {
+      // Handle quoted commas by simple split (sufficient for our structured CSV)
+      const values = line.split(',').map(v => v.trim());
+      const raw: Record<string, string> = {};
+      headers.forEach((h, i) => { raw[h] = values[i] || ''; });
+
+      const violationMeta = VIOLATION_CODES.find(v => v.code === raw['violation_code']) || null;
+      const template = raw['template_id']
+        ? (mockMessageTemplates.find(t => t.id === raw['template_id'] && t.isActive) || null)
+        : violationMeta
+          ? (mockMessageTemplates.find(t => t.violationType === violationMeta.code && t.isActive) || null)
+          : null;
+
+      const errors: string[] = [];
+      if (!raw['seller_id'])       errors.push('seller_id is required');
+      if (!raw['country'])         errors.push('country is required');
+      if (!raw['violation_code'])  errors.push('violation_code is required');
+      else if (!violationMeta)     errors.push(`Unknown violation_code: "${raw['violation_code']}"`);
+      if (!raw['violation_date'])  errors.push('violation_date is required');
+      if (!raw['request_source'])  errors.push('request_source is required');
+
+      // Validate violation-specific required fields
+      if (violationMeta) {
+        for (const f of violationMeta.step2Fields.filter(f => f.required && f.csvColumn)) {
+          if (!raw[f.csvColumn!]) errors.push(`${f.csvColumn} is required for ${violationMeta.label}`);
+        }
       }
 
-      // Generate message
-      if (template) {
-        generatedMessage = template.template
-          .replace(/{sellerId}/g, violation.sellerId || '[Seller ID]')
-          .replace(/{projectId}/g, violation.projectId || '[Project ID]')
-          .replace(/{violationCount}/g, '1');
-      } else if (violation.customMessage) {
-        generatedMessage = violation.customMessage;
-      }
-
-      return {
-        ...violation,
-        templateUsed: template,
-        generatedMessage: generatedMessage || 'No message generated'
+      const row: BulkRow = {
+        seller_id:         raw['seller_id']         || '',
+        country:           raw['country']           || '',
+        violation_code:    raw['violation_code']    || '',
+        violation_date:    raw['violation_date']    || '',
+        request_source:    raw['request_source']    || '',
+        action_code:       raw['action_code']       || '',
+        warning_count:     raw['warning_count']     || '',
+        private_notes:     raw['private_notes']     || '',
+        custom_message:    raw['custom_message']    || '',
+        template_id:       raw['template_id']       || '',
+        offer_code:        raw['offer_code']        || '',
+        sku:               raw['sku']               || '',
+        brand_code:        raw['brand_code']        || '',
+        product_fulltype:  raw['product_fulltype']  || '',
+        category_comcat:   raw['category_comcat']   || '',
+        item_nr:           raw['item_nr']           || '',
+        order_nr:          raw['order_nr']          || '',
+        id_partner:        raw['id_partner']        || '',
+        country_code:      raw['country_code']      || '',
+        linkage_type:      raw['linkage_type']      || '',
+        linking_parameter: raw['linking_parameter'] || '',
+        _violationMeta:    violationMeta,
+        _template:         template,
+        _generatedMessage: template
+          ? generateBulkMessage({ ...({} as BulkRow), seller_id: raw['seller_id'], offer_code: raw['offer_code'], sku: raw['sku'], brand_code: raw['brand_code'], item_nr: raw['item_nr'], order_nr: raw['order_nr'], id_partner: raw['id_partner'], linkage_type: raw['linkage_type'], linking_parameter: raw['linking_parameter'] } as BulkRow, template)
+          : (raw['custom_message'] || ''),
+        _errors: errors,
       };
+      return row;
     });
   };
 
   const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim());
-        
-        const data: BulkViolation[] = lines.slice(1).map((line, index) => {
-          const values = line.split(',').map(v => v.trim());
-          const violation: any = {};
-          headers.forEach((header, i) => {
-            violation[header] = values[i] || '';
-          });
-          
-          return {
-            partnerID: violation.partnerID || '',
-            countryCode: violation.countryCode || '',
-            mpCode: violation.mpCode || 'noon',
-            idViolation: violation.idViolation || '',
-            violationDate: violation.violationDate || '',
-            idPenalty: violation.idPenalty || '',
-            family: violation.family || '',
-            brandCode: violation.brandCode || '',
-            overallRisk: violation.overallRisk || '',
-            requestSource: violation.requestSource || '',
-            triggeredByFlag: violation.triggeredByFlag || '',
-            investigationType: violation.investigationType || '',
-            investigationStatus: violation.investigationStatus || '',
-            skuAsn: violation.skuAsn || '',
-            complaintTicket: violation.complaintTicket || '',
-            currentSellerRating: violation.currentSellerRating || '',
-            brandName: violation.brandName || '',
-            actionOnOffers: violation.actionOnOffers || '',
-            disapprovalReason: violation.disapprovalReason || '',
-            investigatedAcquitted: violation.investigatedAcquitted || '',
-            actionedReason: violation.actionedReason || '',
-            actionCode: violation.actionCode || '',
-            warningCount: violation.warningCount || '',
-            approver2: violation.approver2 || '',
-            channel: violation.channel || '',
-            misc: violation.misc || '',
-            sellerId: violation.partnerID || '',
-            projectId: violation.idViolation || '',
-            templateId: violation.templateId || undefined,
-            customMessage: violation.customMessage || undefined
-          };
-        });
-
-        setBulkData(data);
-        setShowBulkUpload(true);
-      };
-      reader.readAsText(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = parseBulkCsv(text);
+      setBulkRows(rows);
+      setBulkPreviewIndex(0);
+      setShowBulkUpload(true);
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be re-uploaded
+    event.target.value = '';
   };
 
-  const handlePreviewMessages = () => {
-    const processedData = processBulkTemplates(bulkData);
-    setBulkData(processedData);
-    setPreviewMode(true);
-    setCurrentPreviewIndex(0);
+  const handleBulkRemoveRow = (idx: number) => {
+    setBulkRows(prev => prev.filter((_, i) => i !== idx));
+    setBulkPreviewIndex(p => Math.min(p, Math.max(0, bulkRows.length - 2)));
   };
 
   const handleBulkSubmit = () => {
-    console.log('Submitting bulk violations:', bulkData);
-    // Reset bulk upload state
+    console.log('Submitting bulk violations:', bulkRows.filter(r => r._errors.length === 0));
     setShowBulkUpload(false);
-    setBulkData([]);
-    setPreviewMode(false);
-    setCurrentPreviewIndex(0);
-    setSelectedBulkTemplate(null);
+    setBulkRows([]);
+    setBulkPreviewIndex(0);
   };
 
-  const getTemplateAssignmentStats = () => {
-    const processed = processBulkTemplates(bulkData);
-    const withTemplate = processed.filter(v => v.templateUsed).length;
-    const withCustom = processed.filter(v => v.customMessage).length;
-    const withoutMessage = processed.filter(v => !v.generatedMessage || v.generatedMessage === 'No message generated').length;
-    
-    return { total: processed.length, withTemplate, withCustom, withoutMessage };
+  const handleDownloadSampleCsv = () => {
+    const universalCols = ['seller_id','country','violation_code','violation_date','request_source','action_code','warning_count','private_notes','custom_message','template_id'];
+    const specificCols  = ['offer_code','sku','brand_code','product_fulltype','category_comcat','item_nr','order_nr','id_partner','country_code','linkage_type','linking_parameter'];
+    const header = [...universalCols, ...specificCols].join(',');
+    const rows = [
+      ['442777','AE','listing_restricted','2025-06-01','Brand Report','WARN','1','','','','OFFER-0010','SKU-A100','BRAND-001','Electronics','CE/Electronics','','','','','',''].join(','),
+      ['10555','SA','sale_counterfeit','2025-06-02','Internal Flag','SUSPEND','3','Verified by audit','','tpl-sale_counterfeit','OFFER-0020','SKU-B200','BRAND-002','Apparel','Fashion','ITEM-5001','ORD-9001','','','',''].join(','),
+      ['492959','AE','account_multiple_accounts','2025-06-03','Risk Team','SUSPEND','2','','','','','','','','','','','10555','SA','device_fingerprint','shared_device_123'].join(','),
+      ['783421','EG','behavior_assault','2025-06-04','Customer Complaint','SUSPEND','1','','','','','','','','','','','','','',''].join(','),
+    ];
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'bulk_violations_sample.csv'; a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredViolations = useMemo(() => {
@@ -1073,258 +1068,206 @@ const ViolationLedger: React.FC<ViolationLedgerProps> = ({ navigationState }) =>
         </div>
       )}
 
-      {/* Bulk Upload Modal */}
-      {showBulkUpload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Bulk Upload - Template Mapping</h2>
-                <button
-                  onClick={() => {
-                    setShowBulkUpload(false);
-                    setBulkData([]);
-                    setPreviewMode(false);
-                    setCurrentPreviewIndex(0);
-                    setSelectedBulkTemplate(null);
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+      {/* ── Bulk Upload Review Modal ── */}
+      {showBulkUpload && (() => {
+        const validCount   = bulkRows.filter(r => r._errors.length === 0).length;
+        const invalidCount = bulkRows.filter(r => r._errors.length > 0).length;
+        const withMsg      = bulkRows.filter(r => r._generatedMessage).length;
+        const activeRow    = bulkRows[bulkPreviewIndex] ?? null;
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl">
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Bulk Upload — Review & Confirm</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">{bulkRows.length} row{bulkRows.length !== 1 ? 's' : ''} parsed · {validCount} valid · {invalidCount > 0 ? <span className="text-red-600">{invalidCount} with errors</span> : '0 errors'}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={handleDownloadSampleCsv} className="text-xs text-blue-600 hover:text-blue-800 underline">Download sample CSV</button>
+                  <button onClick={() => { setShowBulkUpload(false); setBulkRows([]); setBulkPreviewIndex(0); }} className="text-gray-400 hover:text-gray-700 p-1 rounded"><X className="w-5 h-5" /></button>
+                </div>
               </div>
 
-              {!previewMode ? (
-                <div className="space-y-6">
-                  {/* CSV Preview */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">📋 CSV Preview ({bulkData.length} violations)</h3>
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="max-h-64 overflow-y-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seller ID</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Project ID</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Severity</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Template ID</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {bulkData.slice(0, 10).map((violation, index) => (
-                              <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-4 py-2 text-sm text-gray-900">{violation.sellerId}</td>
-                                <td className="px-4 py-2 text-sm text-gray-900">{violation.projectId}</td>
-                                <td className="px-4 py-2 text-sm text-gray-900">{violation.type}</td>
-                                <td className="px-4 py-2 text-sm text-gray-900">{violation.severity}</td>
-                                <td className="px-4 py-2 text-sm text-gray-900">{violation.templateId || '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      {bulkData.length > 10 && (
-                        <div className="bg-gray-50 px-4 py-2 text-sm text-gray-600">
-                          ... and {bulkData.length - 10} more rows
+              {/* Stats bar */}
+              <div className="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 text-center">
+                {[
+                  { label: 'Total Rows',    value: bulkRows.length,  color: 'text-gray-800' },
+                  { label: 'Valid',         value: validCount,        color: 'text-green-700' },
+                  { label: 'Has Errors',    value: invalidCount,      color: invalidCount > 0 ? 'text-red-600' : 'text-gray-400' },
+                  { label: 'With Message',  value: withMsg,           color: 'text-blue-700' },
+                ].map(s => (
+                  <div key={s.label} className="py-2 px-4">
+                    <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+                    <div className="text-xs text-gray-400">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Body — split pane */}
+              <div className="flex flex-1 overflow-hidden">
+
+                {/* Left — row list */}
+                <div className="w-72 flex-shrink-0 border-r border-gray-100 overflow-y-auto">
+                  {bulkRows.map((row, idx) => {
+                    const isActive  = idx === bulkPreviewIndex;
+                    const hasErrors = row._errors.length > 0;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setBulkPreviewIndex(idx)}
+                        className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${isActive ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-gray-50'}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-700 font-mono">#{idx + 1} · {row.seller_id || '—'}</span>
+                          {hasErrors
+                            ? <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" title="Has errors" />
+                            : <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" title="Valid" />
+                          }
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5 truncate">{row._violationMeta?.label || row.violation_code || 'Unknown code'}</div>
+                        <div className="text-xs text-gray-400">{row.country} · {row.violation_date}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Right — detail card */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {activeRow ? (
+                    <>
+                      {/* Error banner */}
+                      {activeRow._errors.length > 0 && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-red-700 mb-1">Validation errors — this row will be skipped on submit:</p>
+                          <ul className="list-disc list-inside space-y-0.5">
+                            {activeRow._errors.map((e, i) => <li key={i} className="text-xs text-red-600">{e}</li>)}
+                          </ul>
                         </div>
                       )}
-                    </div>
-                  </div>
 
-                  {/* Template Strategy Selection */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Template Assignment Strategy</h3>
-                    <div className="space-y-3">
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="radio"
-                          value="csv"
-                          checked={bulkTemplateStrategy === 'csv'}
-                          onChange={(e) => setBulkTemplateStrategy(e.target.value as any)}
-                          className="text-blue-600"
-                        />
-                        <div>
-                          <span className="font-medium">Use CSV templateId column</span>
-                          <p className="text-sm text-gray-600">Use template IDs specified in the CSV file</p>
+                      {/* Violation identity */}
+                      <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Violation</p>
+                            <p className="text-base font-bold text-gray-900 mt-0.5">{activeRow._violationMeta?.label ?? activeRow.violation_code}</p>
+                            <p className="text-xs text-gray-500">{activeRow._violationMeta?.family} · code: <span className="font-mono">{activeRow.violation_code}</span></p>
+                          </div>
+                          <button onClick={() => handleBulkRemoveRow(bulkPreviewIndex)} className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50" title="Remove this row"><X className="w-4 h-4" /></button>
                         </div>
-                      </label>
-                      
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="radio"
-                          value="single"
-                          checked={bulkTemplateStrategy === 'single'}
-                          onChange={(e) => setBulkTemplateStrategy(e.target.value as any)}
-                          className="text-blue-600"
-                        />
-                        <div>
-                          <span className="font-medium">Apply single template to all</span>
-                          <p className="text-sm text-gray-600">Use one template for all violations</p>
-                        </div>
-                      </label>
-                      
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="radio"
-                          value="auto"
-                          checked={bulkTemplateStrategy === 'auto'}
-                          onChange={(e) => setBulkTemplateStrategy(e.target.value as any)}
-                          className="text-blue-600"
-                        />
-                        <div>
-                          <span className="font-medium">Auto-assign by type & severity</span>
-                          <p className="text-sm text-gray-600">Automatically match templates based on violation type and severity</p>
-                        </div>
-                      </label>
-                    </div>
 
-                    {bulkTemplateStrategy === 'single' && (
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Select Template</label>
-                        <select
-                          value={selectedBulkTemplate?.id || ''}
-                          onChange={(e) => {
-                            const template = mockMessageTemplates.find(t => t.id === e.target.value);
-                            setSelectedBulkTemplate(template || null);
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select a template</option>
-                          {mockMessageTemplates
-                            .filter(template => template.isActive)
-                            .map(template => (
-                              <option key={template.id} value={template.id}>
-                                {template.name} - {template.violationType} ({template.severity})
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Template Assignment Stats */}
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Template Assignment Preview</h3>
-                    <div className="grid grid-cols-4 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-blue-600">{getTemplateAssignmentStats().total}</div>
-                        <div className="text-sm text-gray-600">Total Violations</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-green-600">{getTemplateAssignmentStats().withTemplate}</div>
-                        <div className="text-sm text-gray-600">With Template</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-yellow-600">{getTemplateAssignmentStats().withCustom}</div>
-                        <div className="text-sm text-gray-600">Custom Messages</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-red-600">{getTemplateAssignmentStats().withoutMessage}</div>
-                        <div className="text-sm text-gray-600">No Message</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      onClick={() => {
-                        setShowBulkUpload(false);
-                        setBulkData([]);
-                        setPreviewMode(false);
-                        setCurrentPreviewIndex(0);
-                        setSelectedBulkTemplate(null);
-                      }}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handlePreviewMessages}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Preview Messages</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* Message Preview Mode */
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">📝 Message Preview</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <span className="text-sm text-gray-600">Violation {currentPreviewIndex + 1} of {bulkData.length}</span>
-                          <h4 className="font-medium text-gray-900">
-                            {bulkData[currentPreviewIndex]?.type} - {bulkData[currentPreviewIndex]?.severity}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Seller: {bulkData[currentPreviewIndex]?.sellerId} | Project: {bulkData[currentPreviewIndex]?.projectId}
-                          </p>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                          {[
+                            ['Seller ID',      activeRow.seller_id],
+                            ['Country',        activeRow.country],
+                            ['Date',           activeRow.violation_date],
+                            ['Source',         activeRow.request_source],
+                            ['Action Code',    activeRow.action_code],
+                            ['Warning Count',  activeRow.warning_count],
+                          ].map(([k, v]) => v ? (
+                            <div key={k} className="flex justify-between gap-1">
+                              <span className="text-gray-400">{k}</span>
+                              <span className="text-gray-700 font-medium text-right">{v}</span>
+                            </div>
+                          ) : null)}
                         </div>
-                        {bulkData[currentPreviewIndex]?.templateUsed && (
-                          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                            {bulkData[currentPreviewIndex]?.templateUsed?.name}
+
+                        {/* Violation-specific fields */}
+                        {activeRow._violationMeta && activeRow._violationMeta.step2Fields.length > 0 && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Violation-specific fields</p>
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                              {activeRow._violationMeta.step2Fields.map(f => {
+                                const rowAsDict = activeRow as unknown as Record<string, string>;
+                                const val = f.csvColumn ? rowAsDict[f.csvColumn.replace('/', '_').replace(' ', '_')] || rowAsDict[f.field] || '' : '';
+                                const csvVal = f.csvColumn ? rowAsDict[f.csvColumn] || '' : '';
+                                const display = csvVal || val || '';
+                                return display ? (
+                                  <div key={f.field} className="flex justify-between gap-1">
+                                    <span className="text-gray-400">{f.label}</span>
+                                    <span className={`text-gray-700 font-medium text-right font-mono ${f.required && !display ? 'text-red-500' : ''}`}>{display}</span>
+                                  </div>
+                                ) : f.required ? (
+                                  <div key={f.field} className="flex justify-between gap-1">
+                                    <span className="text-gray-400">{f.label}</span>
+                                    <span className="text-red-500 font-medium">missing</span>
+                                  </div>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Private notes */}
+                        {activeRow.private_notes && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Private Notes</p>
+                            <p className="text-xs text-gray-600 italic">{activeRow.private_notes}</p>
                           </div>
                         )}
                       </div>
-                      
-                      <div className="bg-white rounded border border-gray-200 p-4">
-                        <div className="whitespace-pre-wrap text-gray-900">
-                          {bulkData[currentPreviewIndex]?.generatedMessage}
+
+                      {/* Generated message */}
+                      <div className={`rounded-xl border p-4 space-y-2 ${activeRow._template ? 'border-blue-200 bg-blue-50' : activeRow._generatedMessage ? 'border-yellow-200 bg-yellow-50' : 'border-gray-200 bg-gray-50'}`}>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5" /> Message to Seller
+                          </p>
+                          {activeRow._template
+                            ? <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-medium">{activeRow._template.name}</span>
+                            : activeRow._generatedMessage
+                              ? <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full font-medium">Custom message</span>
+                              : <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">No message</span>
+                          }
                         </div>
+                        {activeRow._generatedMessage ? (
+                          <pre className="whitespace-pre-wrap text-xs text-gray-800 font-sans bg-white border border-gray-200 rounded-lg p-3 max-h-52 overflow-y-auto leading-relaxed">{activeRow._generatedMessage}</pre>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">No template matched for <span className="font-mono">{activeRow.violation_code}</span> and no custom_message provided. A message can still be added manually after creation.</p>
+                        )}
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Preview Navigation */}
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => setCurrentPreviewIndex(Math.max(0, currentPreviewIndex - 1))}
-                      disabled={currentPreviewIndex === 0}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-                    >
-                      ← Previous
-                    </button>
-                    
-                    <div className="text-sm text-gray-600">
-                      {currentPreviewIndex + 1} / {bulkData.length}
-                    </div>
-                    
-                    <button
-                      onClick={() => setCurrentPreviewIndex(Math.min(bulkData.length - 1, currentPreviewIndex + 1))}
-                      disabled={currentPreviewIndex === bulkData.length - 1}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-                    >
-                      Next →
-                    </button>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      onClick={() => setPreviewMode(false)}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                    >
-                      Back to Mapping
-                    </button>
-                    <button
-                      onClick={handleBulkSubmit}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Submit Bulk Upload</span>
-                    </button>
-                  </div>
+                      {/* Row navigation */}
+                      <div className="flex items-center justify-between pt-1">
+                        <button onClick={() => setBulkPreviewIndex(p => Math.max(0, p - 1))} disabled={bulkPreviewIndex === 0}
+                          className="text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">← Prev</button>
+                        <span className="text-xs text-gray-400">{bulkPreviewIndex + 1} / {bulkRows.length}</span>
+                        <button onClick={() => setBulkPreviewIndex(p => Math.min(bulkRows.length - 1, p + 1))} disabled={bulkPreviewIndex === bulkRows.length - 1}
+                          className="text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">Next →</button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-gray-400 text-sm text-center py-20">Select a row to preview</p>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                <button onClick={() => { setShowBulkUpload(false); setBulkRows([]); setBulkPreviewIndex(0); }}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100">Cancel</button>
+                <div className="flex items-center gap-3">
+                  {invalidCount > 0 && (
+                    <span className="text-xs text-red-600">{invalidCount} row{invalidCount !== 1 ? 's' : ''} with errors will be skipped</span>
+                  )}
+                  <button
+                    onClick={handleBulkSubmit}
+                    disabled={validCount === 0}
+                    className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    Confirm & Submit {validCount} Violation{validCount !== 1 ? 's' : ''}
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Violation Detail Modal */}
       <ViolationDetailModal

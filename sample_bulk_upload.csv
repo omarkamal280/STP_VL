@@ -1,11 +1,16 @@
-partnerID,countryCode,mpCode,idViolation,violationDate,idPenalty,family,brandCode,overallRisk,requestSource,triggeredByFlag,investigationType,investigationStatus,skuAsn,complaintTicket,currentSellerRating,brandName,actionOnOffers,disapprovalReason,investigatedAcquitted,actionedReason,actionCode,warningCount,approver2,channel,misc,templateId,customMessage
-442777,AE,noon,Late Delivery,2024-01-15,PEN-001,Logistics,BRAND-A,medium,Customer Complaint,false,Standard,pending,SKU-001,TKT-2024-001,4.2,Brand A,Listing suspended,,false,,ACT-001,1,,noon,,template-1,
-10555,SA,noon,Product Mismatch,2024-01-16,PEN-002,Catalog,BRAND-B,high,Internal Flag,true,Enhanced,in_progress,SKU-002,TKT-2024-002,3.8,Brand B,Offer removed,Quality mismatch,false,,ACT-002,2,,noon,,template-2,Additional note: Specific items were counterfeit
-492959,AE,noon,Counterfeit,2024-01-17,PEN-003,Authenticity,BRAND-C,critical,Brand Report,true,Full,in_progress,SKU-003,TKT-2024-003,2.1,Brand C,All offers suspended,Counterfeit confirmed,false,,ACT-003,3,,noon,,template-3,
-783421,EG,noon,Poor Packaging,2024-01-18,PEN-004,Logistics,BRAND-D,low,Customer Complaint,false,Standard,pending,SKU-004,TKT-2024-004,4.5,Brand D,Warning issued,,false,,ACT-004,1,,noon,,template-4,
-912567,KW,noon,Communication,2024-01-19,PEN-005,Service,BRAND-E,medium,System Flag,false,Standard,pending,SKU-005,TKT-2024-005,3.9,Brand E,,,false,,ACT-005,1,,noon,,template-5,
-334890,SA,noon,Late Delivery,2024-01-20,PEN-006,Logistics,BRAND-F,high,Customer Complaint,false,Standard,in_progress,SKU-006,TKT-2024-006,3.2,Brand F,Listing demoted,,false,,ACT-001,2,,noon,,template-1,
-667123,AE,noon,Quality Issues,2024-01-21,PEN-007,Quality,BRAND-G,high,Internal Audit,true,Enhanced,in_progress,SKU-007,TKT-2024-007,3.5,Brand G,Offer removed,,false,,ACT-002,2,,noon,,template-2,
-445678,QA,noon,Fraudulent Activity,2024-01-22,PEN-008,Fraud,BRAND-H,critical,Risk Team,true,Full,pending,SKU-008,TKT-2024-008,1.8,Brand H,All offers suspended,,false,,ACT-003,3,,noon,,,Custom investigation message for this case
-889012,BH,noon,Packaging,2024-01-23,PEN-009,Logistics,BRAND-I,medium,Customer Complaint,false,Standard,pending,SKU-009,TKT-2024-009,4.0,Brand I,Warning issued,,false,,ACT-004,1,,noon,,template-4,
-223456,OM,noon,Delivery,2024-01-24,PEN-010,Logistics,BRAND-J,low,Customer Complaint,false,Standard,pending,SKU-010,TKT-2024-010,4.6,Brand J,,,false,,ACT-001,1,,noon,,template-1,Please monitor delivery performance more closely
+seller_id,country,violation_code,violation_date,request_source,action_code,overall_risk,warning_count,private_notes,custom_message,offer_code,sku,brand_code,product_fulltype,category_comcat,item_nr,order_nr,id_partner,country_code,linkage_type,linking_parameter
+442777,AE,listing_restricted,2025-06-01,Brand Report,WARN,medium,1,Reported by Nike compliance team,,OFFER-0010,SKU-A100,BRAND-001,Electronics,CE/Electronics,,,,,, 
+10555,SA,listing_counterfeit,2025-06-02,Internal Flag,SUSPEND,high,2,Audit confirmed counterfeit Nike goods,,OFFER-0021,SKU-B201,BRAND-002,Apparel,Fashion,,,,,, 
+492959,AE,sale_counterfeit,2025-06-03,Brand Report,SUSPEND,critical,3,Adidas brand complaint — sale confirmed,,OFFER-0032,SKU-C302,BRAND-003,Footwear,Sports/Footwear,ITEM-5001,ORD-9001,,,, 
+783421,EG,sale_restricted,2025-06-04,Customer Complaint,WARN,high,1,,,OFFER-0043,SKU-D403,BRAND-004,Electronics,CE/Mobile,ITEM-5002,ORD-9002,,,, 
+912567,KW,behavior_offer_abuse,2025-06-05,System Flag,WARN,medium,1,Triggered by promo abuse detector,,OFFER-0054,SKU-E504,BRAND-005,Appliances,Home/Appliances,ITEM-5003,ORD-9003,,,, 
+334890,SA,behavior_stock_blocking,2025-06-06,Risk Team,SUSPEND,critical,3,Confirmed pattern of competitor blocking,,OFFER-0065,SKU-F605,BRAND-006,Electronics,CE/Computing,ITEM-5004,ORD-9004,,,, 
+667123,QA,rating_solicitation,2025-06-07,Customer Complaint,WARN,medium,1,,,OFFER-0076,SKU-G706,BRAND-007,Books,Books/General,ITEM-5005,ORD-9005,,,, 
+445678,EG,rating_manipulation,2025-06-08,Internal Flag,SUSPEND,high,2,Review manipulation flagged by algorithm,,OFFER-0087,SKU-H807,BRAND-008,Beauty,Beauty/Skincare,ITEM-5006,ORD-9006,,,, 
+442777,SA,account_multiple_accounts,2025-06-09,Risk Team,SUSPEND,high,2,Device fingerprint match confirmed,,,,,,,,,10555,SA,device_fingerprint,shared_device_XYZ
+334890,AE,behavior_assault,2025-06-10,Customer Complaint,SUSPEND,critical,1,Physical altercation reported at warehouse,,,,,,,,,,,,
+783421,EG,behavior_impersonation,2025-06-11,Internal Flag,WARN,high,1,Impersonated noon partner brand,,,,,,,,,,,,
+912567,KW,account_forgery,2025-06-12,Compliance Review,SUSPEND,critical,2,Forged commercial registration submitted,,,,,,,,,,,,
+667123,QA,legal_false_lawsuit,2025-06-13,Legal Team,RESTRICT,critical,1,False IP claim filed against noon,,,,,,,,,,,,
+445678,SA,listing_duplicate,2025-06-14,Internal Audit,WARN,low,1,,,OFFER-0098,SKU-I908,BRAND-009,Toys,Toys/Games,,,,,, 
+492959,AE,sale_intelectual_property,2025-06-15,Brand Report,SUSPEND,critical,3,Puma IP complaint — sale confirmed,,OFFER-0109,SKU-J009,BRAND-010,Footwear,Sports/Footwear,ITEM-5007,ORD-9007,,,, 
